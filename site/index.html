@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Dashboard</title>
+<link rel="stylesheet" href="style.css?v=1786086151">
+<script src="vendor/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+
+  <div class="viewport-section">
+    <div class="topbar">
+      <div class="title-frame">
+        <h1>Portfolio</h1>
+        <div class="sample-tag">Sample data</div>
+      </div>
+      <div class="periods" id="periods">
+        <button data-p="1d">1D</button>
+        <button data-p="1m">1M</button>
+        <button data-p="6m" class="active">6M</button>
+        <button data-p="1y">1Y</button>
+        <button data-p="all">All</button>
+        <button data-p="custom">Custom</button>
+        <input type="date" id="date-start">
+        <input type="date" id="date-end">
+      </div>
+    </div>
+
+    <div class="kpi-split">
+      <div class="chart-kpi-row">
+        <div class="mini-kpi"><div class="l" id="cq-alpha-label">Alpha</div><div class="v" id="cq-alpha">--</div></div>
+        <div class="mini-kpi"><div class="l" id="cq-beta-label">Beta</div><div class="v" id="cq-beta">--</div></div>
+        <div class="mini-kpi"><div class="l" id="cq-sharpe-label">Sharpe</div><div class="v" id="cq-sharpe">--</div></div>
+        <div class="mini-kpi"><div class="l" id="cq-dd-label">Max DD</div><div class="v" id="cq-dd">--</div></div>
+        <div class="mini-kpi"><div class="l">Rate</div><div class="v" id="cq-win">--</div></div>
+        <div class="mini-kpi"><div class="l" id="cq-sortino-label">Sortino</div><div class="v" id="cq-sortino">--</div></div>
+      </div>
+      <div class="return-card"><div class="l">Return</div><div class="v" id="cq-return">--</div></div>
+    </div>
+
+    <div class="main-grid">
+      <div class="card chart-card">
+        <div id="chart-main" class="fill"></div>
+      </div>
+      <div class="right-top">
+        <div class="bench-row" id="bench-row"></div>
+        <div class="card bubble-card"><h2>Current bubble chart</h2><div id="chart-bubble" class="fill"></div></div>
+      </div>
+      <div class="tiles-row">
+        <div class="card tile-card"><h2>Calendar</h2><div id="calendar-grid" class="gridcal"></div></div>
+        <div class="card tile-card gauges">
+          <div class="gauge-circle fill">
+            <div class="gauge-mini" id="gauge-beta-wrap">
+              <div id="gauge-beta" class="g"></div>
+              <div class="gauge-label" id="beta-label"><div class="gl-name" id="beta-name">Beta</div><div class="gl-value" id="beta-value">--</div></div>
+            </div>
+            <div class="ls-block" title="Current capital allocation by long/short side">
+              <div class="ls-title">Current balance</div>
+              <div class="ls-bar" id="ls-bar"></div>
+            </div>
+            <div class="gauge-mini" id="gauge-cash-wrap">
+              <div id="gauge-cash" class="g"></div>
+              <div class="gauge-label" id="cash-label" title="Current utilization -- a live snapshot, not a period-windowed figure"><div class="gl-name">Current allocation</div><div class="gl-value" id="cash-value">--</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="card tile-card"><h2>Open positions</h2><div id="positions-grid" class="gridN"></div></div>
+      </div>
+      <div class="right-bottom">
+        <div class="card selected-card"><h2 id="selected-title">Selected</h2><div id="chart-selected" class="fill"></div></div>
+        <div class="footer">
+          <span>Aitor Bazo</span><span>&middot;</span><span>2026</span><span>&middot;</span><span>Github</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Below-fold: analytics that don't have a slot in the ported viewport
+       layout above (see site/app.js). Reached only by scrolling. The nested
+       1fr/360px split, then 1/0.72/1 flex inside the first cell, mirrors
+       main-grid's own column math exactly (same padding, same gap) so this
+       row's edges land under calendar/gauges/positions/today above at any
+       viewport width, not just approximately. -->
+  <div class="below-fold">
+    <div class="chart-grid-below">
+      <div class="below-left">
+        <div class="card"><h2>Rolling 60-day Sharpe</h2><div id="chart-rolling-sharpe" class="fill-chart"></div></div>
+        <div class="card narrow"><h2>Capital utilization</h2><div id="chart-utilization" class="fill-chart"></div></div>
+        <div class="card"><h2>Trade return distribution</h2><div id="chart-histogram" class="fill-chart"></div></div>
+      </div>
+      <div class="card"><h2>Contribution concentration</h2><div id="chart-concentration" class="fill-chart"></div></div>
+    </div>
+  </div>
+
+<script src="app.js?v=1786086151"></script>
+</body>
+</html>
