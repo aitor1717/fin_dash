@@ -884,6 +884,14 @@ async function loadAndRenderAll(path) {
 }
 
 async function main() {
+  // The "Sample data" tag is only true for the published default -- any
+  // other DATA_PATH (a real book, a different scenario) means we can't
+  // claim it's sample data, so drop the tag instead of showing a stale one.
+  if (DATA_PATH !== 'data-sample/dashboard.json') {
+    document.getElementById('sample-tag')?.remove();
+    document.getElementById('sample-tag-sep')?.remove();
+  }
+
   document.querySelectorAll('.periods button[data-p]').forEach(b => b.addEventListener('click', () => {
     document.querySelectorAll('.periods button[data-p]').forEach(x => x.classList.remove('active'));
     b.classList.add('active');
