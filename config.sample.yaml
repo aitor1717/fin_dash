@@ -29,4 +29,4 @@ compliance:
   min_share_price: 0.10
   min_avg_volume: 500000
 
-output_dir: site/data-sample
+output_dir: docs/data-sample

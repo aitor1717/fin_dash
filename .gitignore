@@ -8,7 +8,7 @@ __pycache__/
 
 # Real trade history and anything built from it -- only feed/sample_feed.csv
 # (fully synthetic, see pipeline/generate_sample_feed.py) and its own
-# site/data-sample/ output are meant to be public. Everything below is
+# docs/data-sample/ output are meant to be public. Everything below is
 # either the real feed or a config/output derived from it.
 feed/example_feed*.csv
 feed/example_feed*.csv.bak
@@ -20,13 +20,13 @@ config.w15.yaml
 config.w20.yaml
 config.halved*.yaml
 config.augmented.yaml
-site/data/
-site/data-augmented/
-site/data-feed2/
-site/data-tolerant15/
-site/data-w15/
-site/data-w20/
-site/data-halved*/
+docs/data/
+docs/data-augmented/
+docs/data-feed2/
+docs/data-tolerant15/
+docs/data-w15/
+docs/data-w20/
+docs/data-halved*/
 
 # Unrelated personal planning doc that ended up in this working directory --
 # not part of the dashboard project, not meant to be public.
@@ -37,6 +37,6 @@ site/data-halved*/
 
 # Design references (mood boards, some sourced from stock/Tumblr images with
 # unclear reuse rights) and exploratory mockups superseded by the final
-# site/index.html -- neither is part of the published product.
+# docs/index.html -- neither is part of the published product.
 /inspo/
-/site/mockups/
+/docs/mockups/
