@@ -4,7 +4,7 @@
 
 ![Dashboard preview](preview.png)
 
-A self-refreshing dashboard for a trade-log CSV feed: historic and current-day
+A simple but powerful finance dashboard for a trade-log CSV feed: historic and current-day
 performance vs. benchmarks, with standard portfolio/trade metrics plus an
 evaluation-style compliance panel (profit target, max loss, position
 concentration, price/volume floors).
