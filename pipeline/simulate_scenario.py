@@ -1,15 +1,14 @@
-"""What-if scenario generator: layer synthetic long/short trades onto the
-real feed to see the effect on portfolio stats IF that much additional,
-genuinely uncorrelated edge existed. This does not forecast or validate that
-such edge exists -- it shows the consequence of assuming it does, and it
-verifies the "uncorrelated" assumption is actually true in the simulation
-(reports the realized correlation) rather than just asserting it.
+"""What-if scenario generator: layers synthetic long/short trades onto the
+real feed to show the effect on portfolio stats IF that much additional,
+uncorrelated edge existed. This doesn't forecast or validate that edge --
+it shows the consequence of assuming it, and reports the realized
+correlation to check the "uncorrelated" assumption instead of asserting it.
 
 Synthetic trades are bootstrap-resampled from the real closed-trade return
-and hold-time distributions, then placed at independent random times across
-the same window -- decorrelating them in time from the real day-by-day P&L.
-They're written out as ordinary rows in the same feed CSV schema, so the
-existing pipeline (parse_feed/sizing/metrics/build) runs on them unchanged.
+and hold-time distributions, then placed at independent random times
+across the same window. This decorrelates them in time from the real
+day-by-day P&L. They're written as ordinary rows in the same feed CSV
+schema, so parse_feed/sizing/metrics/build run on them unchanged.
 
 Usage:
   python pipeline/simulate_scenario.py --config config.yaml \

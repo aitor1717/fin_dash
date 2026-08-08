@@ -61,7 +61,7 @@
             </div>
             <div class="gauge-mini" id="gauge-cash-wrap">
               <div id="gauge-cash" class="g"></div>
-              <div class="gauge-label" id="cash-label" title="Current utilization -- a live snapshot, not a period-windowed figure"><div class="gl-name">Current allocation</div><div class="gl-value" id="cash-value">--</div></div>
+              <div class="gauge-label" id="cash-label" title="Current utilization: a live snapshot, not a period-windowed figure"><div class="gl-name">Current allocation</div><div class="gl-value" id="cash-value">--</div></div>
             </div>
           </div>
         </div>
@@ -76,12 +76,12 @@
     </div>
   </div>
 
-  <!-- Below-fold: analytics that don't have a slot in the ported viewport
-       layout above (see docs/app.js). Reached only by scrolling. The nested
+  <!-- Below-fold: analytics with no slot in the ported viewport layout
+       above (see docs/app.js). Reached only by scrolling. The nested
        1fr/360px split, then 1/0.72/1 flex inside the first cell, mirrors
-       main-grid's own column math exactly (same padding, same gap) so this
-       row's edges land under calendar/gauges/positions/today above at any
-       viewport width, not just approximately. -->
+       main-grid's own column math exactly (same padding, same gap). This
+       row's edges then land under calendar/gauges/positions/today above,
+       at any viewport width. -->
   <div class="below-fold">
     <div class="chart-grid-below">
       <div class="below-left">

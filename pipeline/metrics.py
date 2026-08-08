@@ -11,9 +11,8 @@ TRADING_DAYS_PER_YEAR = 252
 
 
 # ---------------------------------------------------------------------------
-# Daily $ P&L / equity curve, built from admitted+closed trades grouped by
-# close date -- the same "sum % return by close-date" approach a trade-level
-# feed like this is naturally analyzed with.
+# Daily $ P&L / equity curve, from admitted+closed trades grouped by
+# close date.
 # ---------------------------------------------------------------------------
 
 def daily_pnl(sized_trades: list[SizedTrade], tz: str) -> pd.Series:
@@ -52,10 +51,9 @@ def max_drawdown(equity: pd.Series) -> dict:
 
 
 def sharpe_ratio(returns: pd.Series) -> float:
-    # len < 2, not just empty: pandas' .std() (ddof=1) is 0/0 = NaN on a
-    # single-element series, not 0 -- that NaN would otherwise slip past the
-    # "== 0" check below and propagate into the JSON as a literal NaN token,
-    # which isn't valid JSON and breaks the frontend's JSON.parse.
+    # len < 2, not just empty. pandas' .std() (ddof=1) returns NaN, not 0,
+    # on a single-element series. NaN would pass the "== 0" check below,
+    # then break the frontend's JSON.parse (NaN isn't valid JSON).
     if len(returns) < 2 or returns.std() == 0:
         return 0.0
     return float(returns.mean() / returns.std() * np.sqrt(TRADING_DAYS_PER_YEAR))
@@ -94,8 +92,8 @@ def alpha_beta(strategy_returns: pd.Series, benchmark_returns: pd.Series) -> dic
 
 
 # ---------------------------------------------------------------------------
-# Trade-level stats: computed on *all* closed trades (signal quality is a
-# property of the trades, independent of how much capital sizing admitted).
+# Trade-level stats, computed on *all* closed trades. Signal quality is a
+# property of the trades, not of how much capital sizing admitted.
 # ---------------------------------------------------------------------------
 
 def trade_level_stats(trades: list[Trade]) -> dict:
@@ -121,9 +119,9 @@ def trade_level_stats(trades: list[Trade]) -> dict:
         "kurtosis": float(returns.kurt()) if len(returns) > 3 else 0.0,
         "avg_win_pct": float(wins.mean()) if len(wins) else 0.0,
         "avg_loss_pct": float(losses.mean()) if len(losses) else 0.0,
-        # None (JSON null), not float("inf") -- Infinity isn't valid JSON and
-        # breaks the frontend's JSON.parse; None matches how the rest of the
-        # codebase already represents "not applicable" (e.g. recovery_date).
+        # None (JSON null), not float("inf"). Infinity isn't valid JSON and
+        # breaks the frontend's JSON.parse. None matches how the rest of the
+        # codebase represents "not applicable" (e.g. recovery_date).
         "profit_factor": float(gross_win / gross_loss) if gross_loss else None,
         "expectancy_pct": float(returns.mean()) if len(returns) else 0.0,
         "median_hold_hours": float(hold_hours.median()) if len(hold_hours) else 0.0,
@@ -200,14 +198,14 @@ def compliance_panel(
         "profit_target_pct": profit_target,
         "progress_to_target_pct": float(100 * cumulative_return_pct / profit_target) if profit_target else 0.0,
         "max_loss_pct": max_loss,
-        # max_drawdown_pct is peak-to-trough (already <= 0); funded-account max-loss
-        # rules are trailing-drawdown based, not measured from the starting balance.
+        # max_drawdown_pct is peak-to-trough (already <= 0). Funded-account
+        # max-loss rules use trailing drawdown, not the starting balance.
         "distance_to_max_loss_pct": float(max_loss + max_drawdown_pct),  # positive = safe margin
         "concentration_band_pct": [band_low, band_high],
         "top_position_concentration_pct": top_concentration_pct,
-        # "30-50% max" is an upper bound, not a target band: under band_low is
-        # clearly compliant, over band_high is a clear violation, and the
-        # stretch between is a caution zone (depends on the exact tier rule).
+        # "30-50% max" is an upper bound, not a target band. Under band_low
+        # is compliant. Over band_high is a violation. Between the two is a
+        # caution zone.
         "concentration_status": (
             "ok" if top_concentration_pct <= band_low
             else "caution" if top_concentration_pct <= band_high

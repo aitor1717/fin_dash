@@ -18,10 +18,10 @@ const MUTED = cv('--muted', '#7a8096'), GRID = cv('--grid', 'rgba(255,255,255,0.
 const GREEN_RGB = hexToRgb(GREEN), RED_RGB = hexToRgb(RED), BLUE_RGB = hexToRgb(BLUE);
 const GLOW = parseFloat(cv('--glow-strength', '1')) || 0;
 const DAY_PERIODS = { '1d': 1, '1m': 30, '6m': 182, '1y': 365, all: Infinity };
-// Beta/alpha are a regression coefficient -- meaningless, or wildly noisy,
-// from just a handful of points. Unlike return/Sharpe/drawdown (well-defined
+// Beta/alpha are a regression coefficient: meaningless, or wildly noisy,
+// from a handful of points. Unlike return/Sharpe/drawdown (well-defined
 // for any window length), the regression always uses at least this many
-// trailing days, expanding backward past the selected period when that
+// trailing days. It expands backward past the selected period when that
 // period is shorter (e.g. 1D). See computeKPIsForRange.
 const MIN_REGRESSION_DAYS = 30;
 const BENCH_LABELS = { SPY: 'SPY', QQQ: 'NASDAQ', DIA: 'DOW' };
@@ -37,9 +37,9 @@ function fmtPct(v, d = 2) {
 }
 function fmtNum(v, d = 2) { return v == null ? '—' : v.toFixed(d); }
 
-// Linear regression (beta=slope, alpha=intercept) -- same math as the Python
-// alpha_beta(), applied to a client-side window since only the full-period
-// version is precomputed server-side.
+// Linear regression (beta=slope, alpha=intercept), same math as Python's
+// alpha_beta(). Applied client-side since only the full-period version is
+// precomputed server-side.
 function regress(x, y) {
   const n = x.length;
   if (n < 2) return { beta: 0, alpha: 0 };
@@ -88,20 +88,21 @@ function computeKPIsForRange(d, i0, i1, period) {
   const eq = d.historic.equity_strategy_dollars.slice(i0, i1 + 1);
   const todayPortfolio = (d.today.series || {}).portfolio;
 
-  // Sharpe/Sortino/alpha/beta all need enough return OBSERVATIONS to be
-  // statistically meaningful -- a variance estimate or regression
-  // coefficient from a couple of points is noise, not signal. All four
-  // share the same floored window (MIN_REGRESSION_DAYS trailing days,
-  // expanding backward past [i0,i1] only when that period is shorter --
-  // periods already >= the minimum, like 6M/1Y/All, are unaffected).
+  // Sharpe/Sortino/alpha/beta all need enough return observations to be
+  // meaningful -- a variance estimate or regression coefficient from a
+  // couple of points is noise, not signal. All four share the same
+  // floored window: MIN_REGRESSION_DAYS trailing days, expanding
+  // backward past [i0,i1] only when that period is shorter. Periods
+  // already at or above the minimum (6M/1Y/All) are unaffected.
   const regressI0 = Math.min(i0, Math.max(0, i1 - MIN_REGRESSION_DAYS + 1));
   const eqForRegress = d.historic.equity_strategy_dollars.slice(regressI0, i1 + 1);
   const stratRetForRegress = pctChange(eqForRegress);
   const mean = stratRetForRegress.reduce((a, b) => a + b, 0) / (stratRetForRegress.length || 1);
   const std = Math.sqrt(stratRetForRegress.reduce((a, b) => a + (b - mean) ** 2, 0) / (stratRetForRegress.length || 1));
   const sharpe = std ? (mean / std) * Math.sqrt(252) : 0;
-  // Same len>=2 guard as pipeline/metrics.py's sortino_ratio (a single-point
-  // downside sample gives 0/0 = NaN, not 0, from a plain std formula).
+  // Same len>=2 guard as pipeline/metrics.py's sortino_ratio. A
+  // single-point downside sample gives 0/0 = NaN, not 0, from a plain
+  // std formula.
   const downside = stratRetForRegress.filter(r => r < 0);
   let sortino = 0;
   if (downside.length >= 2) {
@@ -117,11 +118,11 @@ function computeKPIsForRange(d, i0, i1, period) {
   }
 
   // Max drawdown IS well-defined for a single day on its own (today's own
-  // peak-to-trough), unlike Sharpe/Sortino/alpha/beta -- so 1D reads the
+  // peak-to-trough), unlike Sharpe/Sortino/alpha/beta. So 1D reads the
   // real intraday series instead of borrowing a longer window. The daily
-  // historic series has no new REALIZED close on a day with no closed
-  // trades, so its own "1D" slice is always a flat 0% no matter how today's
-  // book is actually moving intraday.
+  // historic series has no new realized close on a day with no closed
+  // trades, so its own "1D" slice is always a flat 0%, regardless of how
+  // today's book is actually moving intraday.
   let maxDD;
   const maxDDIsIntraday = period === '1d' && todayPortfolio && todayPortfolio.length;
   if (maxDDIsIntraday) {
@@ -134,9 +135,9 @@ function computeKPIsForRange(d, i0, i1, period) {
     maxDD = dd * 100;
   }
 
-  // Today's actual move (from the 5-minute intraday series), not the
-  // 2-point daily-close-to-daily-close change -- consistent with what the
-  // main chart itself shows for this period (see renderMainChartIntraday).
+  // Today's actual move, from the 5-minute intraday series, not the
+  // 2-point daily-close-to-daily-close change. Matches what the main
+  // chart shows for this period (see renderMainChartIntraday).
   let returnPct = eq.length > 1 ? 100 * (eq[eq.length - 1] / eq[0] - 1) : 0;
   if (period === '1d' && todayPortfolio && todayPortfolio.length) {
     returnPct = todayPortfolio[todayPortfolio.length - 1];
@@ -160,24 +161,22 @@ function mainChartLayout() {
 function renderMainChart(d, i0, i1, period) {
   if (period === '1d') { renderMainChartIntraday(d); return; }
   const dates = d.historic.dates.slice(i0, i1 + 1);
-  // equity_normalized is rebased to 100 at the FULL HISTORY's own start, not
-  // the displayed window's -- slicing it directly means the two lines start
-  // at whatever value they each happened to be at i0 (generally different
-  // for strategy vs. benchmark), not together. Re-rebasing the slice to 0%
-  // at its own first point (same idea renderBenchRow's own windowed %
-  // already uses) makes both lines start at the same point regardless of
-  // which period is selected.
+  // equity_normalized is rebased to 100 at the full history's own start,
+  // not the displayed window's. Slicing it directly would start the two
+  // lines at whatever value each had at i0 -- usually different for
+  // strategy vs. benchmark. Re-rebasing the slice to 0% at its own first
+  // point (same idea as renderBenchRow) makes both lines start together
+  // for any period.
   const rebase = (arr) => (arr.length ? arr.map(v => 100 * (v / arr[0] - 1)) : arr);
   const eq = rebase(d.historic.equity_normalized.strategy.slice(i0, i1 + 1));
-  // QQQ isn't guaranteed to exist -- every config in this repo happens to
-  // include it, but a config that omits it, or a transient fetch failure
-  // that drops just that one column (see build.py's all-NaN-column-drop),
-  // would otherwise crash the whole chart. Guarded the same way
-  // computeKPIsForRange already guards its own QQQ read.
+  // QQQ isn't guaranteed to exist. A config that omits it, or a fetch
+  // failure that drops the column (see build.py's all-NaN-column-drop),
+  // would otherwise crash the chart. Guarded the same way
+  // computeKPIsForRange guards its own QQQ read.
   const bench = d.historic.equity_normalized.QQQ ? rebase(d.historic.equity_normalized.QQQ.slice(i0, i1 + 1)) : null;
-  // Red, not green, when the DISPLAYED period itself is a net loss -- same
-  // up/down-by-sign convention renderSelectedChart already uses for the
-  // per-ticker intraday chart, applied here to the period's own start/end.
+  // Red when the displayed period is a net loss. Same up/down-by-sign
+  // convention as renderSelectedChart, applied to the period's own
+  // start/end.
   const color = eq.length > 1 && eq[eq.length - 1] < eq[0] ? RED : GREEN;
   const traces = [];
   if (bench) {
@@ -199,12 +198,11 @@ function renderMainChart(d, i0, i1, period) {
   }, PLOTLY_CONFIG);
 }
 
-// 1D: the daily-resolution historic series has only ~1-2 points for "today",
-// too coarse to be a useful intraday view. The pipeline already fetches
-// genuine 5-minute data for both benchmarks and the notional-weighted open
-// book (market_data.fetch_intraday_today, assembled into today.series by
-// build.py) -- reuse that here instead of pretending a daily-granularity
-// series can show "today".
+// 1D: the daily-resolution historic series has only ~1-2 points for
+// "today" -- too coarse for an intraday view. The pipeline already
+// fetches real 5-minute data for benchmarks and the notional-weighted
+// open book (market_data.fetch_intraday_today, in today.series). Use
+// that instead of a daily-granularity series.
 function renderMainChartIntraday(d) {
   const timestamps = d.today.timestamps || [];
   const series = d.today.series || {};
@@ -220,10 +218,10 @@ function renderMainChartIntraday(d) {
       hovertemplate: 'NASDAQ %{y:.1f}%<extra></extra>' });
   }
   if (series.portfolio) {
-    // Same up/down-by-sign convention as renderSelectedChart: first vs last
-    // point of the series actually shown, not just "is the latest value
-    // negative" (a session that dipped and fully recovered should read
-    // green, not red).
+    // Same up/down-by-sign convention as renderSelectedChart: first vs.
+    // last point of the series shown, not just "is the latest value
+    // negative". A session that dipped and fully recovered should read
+    // green.
     const firstVal = series.portfolio.find(v => v != null);
     const lastVal = [...series.portfolio].reverse().find(v => v != null);
     const color = firstVal != null && lastVal != null && lastVal < firstVal ? RED : GREEN;
@@ -259,9 +257,9 @@ function renderKPIs(k) {
   const so = document.getElementById('cq-sortino');
   so.textContent = fmtNum(k.sortino); so.className = 'v neutral-blue';
 
-  // Hover-only, not always-visible text -- which window a reading actually
-  // came from is secondary detail, same "identity moves to the tooltip"
-  // pattern used throughout (calendar/position tiles, the gauge dots).
+  // Hover-only, not always-visible text. Which window a reading came
+  // from is secondary detail -- same "identity moves to the tooltip"
+  // pattern used throughout (calendar/position tiles, gauge dots).
   const windowNote = 'Uses a trailing 30-day window since the selected period is too short for a reliable calculation.';
   const windowTitle = k.regressionWindowExpanded ? windowNote : '';
   document.getElementById('cq-alpha-label').title = windowTitle;
@@ -283,13 +281,12 @@ function update() {
   renderGauges(GLOBAL_D, kpis.beta, betaPeriodLabel);
 }
 
-// Plotly's gauge `bar` always fills from the axis MINIMUM to the value --
-// there's no native "grows from a center point" mode. Faked here by hiding
-// the bar entirely (transparent) and building the fill out of `steps`
-// instead: a dim track on either side, and one bright step running from
-// zero to the value -- so a beta of 0.22 shows as a short bright arc just
-// right of center, not a bar stretching from -2. No gap/seam at zero -- the
-// bright step touches it directly, one continuous curve.
+// Plotly's gauge `bar` always fills from the axis minimum to the value;
+// there's no native "grows from center" mode. Faked here: hide the bar
+// (transparent) and build the fill from `steps` instead -- a dim track
+// on either side, one bright step from zero to the value. A beta of
+// 0.22 then shows as a short bright arc right of center, not a bar from
+// -2. No gap at zero: the bright step touches it directly.
 function renderBetaGauge(value, range, color, glowRgb, allTimeBeta, periodLabel) {
   const [lo, hi] = range;
   const dim = 'rgba(127,127,127,0.12)';
@@ -310,15 +307,15 @@ function renderBetaGauge(value, range, color, glowRgb, allTimeBeta, periodLabel)
     ];
   }
   document.getElementById('beta-value').textContent = fmtNum(value, 2);
-  // Hover-only, not always-visible text -- which window this reading uses
-  // is secondary detail, same "identity moves to the tooltip" pattern
-  // already used for the calendar/position tiles and the reference dots.
+  // Hover-only, not always-visible text. Which window this reading uses
+  // is secondary detail -- same "identity moves to the tooltip" pattern
+  // used for the calendar/position tiles and the reference dots.
   const betaLabelEl = document.getElementById('beta-label');
   if (betaLabelEl) betaLabelEl.title = periodLabel ? `Showing: ${periodLabel}` : '';
-  // mode:'gauge' only -- no built-in Plotly number. Its own position isn't
-  // controllable (it lands right at the seam, on top of the balance bar);
-  // the custom .gauge-label in the HTML, placed and colored by CSS/JS
-  // instead, replaces it.
+  // mode:'gauge' only, no built-in Plotly number. Its position isn't
+  // controllable -- it lands right at the seam, on top of the balance
+  // bar. The custom .gauge-label in the HTML replaces it, placed and
+  // colored by CSS/JS instead.
   return Plotly.newPlot('gauge-beta', [{
     type: 'indicator', mode: 'gauge', value,
     gauge: {
@@ -331,10 +328,10 @@ function renderBetaGauge(value, range, color, glowRgb, allTimeBeta, periodLabel)
     margin: { l: 22, r: 22, t: 16, b: 6 },
   }, PLOTLY_CONFIG).then(() => {
     document.getElementById('gauge-beta').style.filter = GLOW > 0 ? `drop-shadow(0 0 ${7 * GLOW}px rgba(${glowRgb},0.85))` : 'none';
-    // Beta's fill now tracks the selected period, so the all-time value
-    // (the same number this gauge always showed before) is preserved as a
-    // reference dot -- blue, distinct from the fill's own green/red status
-    // coloring, same pattern as the capital gauge's average-utilization dot.
+    // Beta's fill tracks the selected period. The all-time value is kept
+    // as a reference dot -- blue, distinct from the fill's own green/red
+    // status coloring, same pattern as the capital gauge's average-
+    // utilization dot.
     if (allTimeBeta != null) positionGaugeDot('gauge-beta', allTimeBeta, range, BLUE, `All-time beta: ${fmtNum(allTimeBeta, 2)}`);
   });
 }
@@ -350,9 +347,9 @@ function renderCapitalGauge(value, range, color, glowRgb, avgValue) {
   const dim = 'rgba(127,127,127,0.12)';
   const fillEnd = Math.max(lo, Math.min(hi, value));
   document.getElementById('cash-value').textContent = fmtNum(value, 1) + '%';
-  // mode:'gauge' only -- see renderBetaGauge; also sidesteps having to
-  // counter-mirror Plotly's own number back upright after the scaleY(-1)
-  // CSS flip that turns this half into the "U".
+  // mode:'gauge' only -- see renderBetaGauge. Also avoids counter-
+  // mirroring Plotly's own number after the scaleY(-1) CSS flip that
+  // turns this half into the "U".
   return Plotly.newPlot('gauge-cash', [{
     type: 'indicator', mode: 'gauge', value,
     gauge: {
@@ -373,15 +370,12 @@ function renderCapitalGauge(value, range, color, glowRgb, avgValue) {
   });
 }
 
-// Third attempt at this, and the most rigorous: rather than assume a
-// thickness fraction or fight Plotly's threshold-thickness semantics
-// (unclear, and empirically wrong twice), parse the RENDERED background
-// arc's own SVG path data directly. d3-style annulus/ring paths encode both
-// radii as explicit numbers after "A" commands -- reading them straight out
-// of the path is exact, not a guess. Center and outer radius come from the
-// same path's bounding box (bottom-center, half-width), consistent with the
-// earlier approach; what's new is getting the INNER radius from the path
-// itself instead of computing it from an assumed thickness.
+// Reads the rendered background arc's own SVG path data instead of
+// assuming a thickness fraction. d3-style annulus/ring paths encode both
+// radii as explicit numbers after "A" commands, so reading them from the
+// path is exact, not a guess. Center and outer radius come from the
+// path's bounding box (bottom-center, half-width); inner radius comes
+// from the path data itself.
 function positionGaugeDot(divId, value, range, color, label) {
   const el = document.getElementById(divId);
   const bgPaths = Array.from(el.querySelectorAll('g.bg-arc path'));
@@ -435,14 +429,13 @@ function positionGaugeDot(divId, value, range, color, label) {
   if (label) dot.title = label;
 }
 
-// Same bg-arc lookup as positionGaugeDot -- centerLocal (bottom-center of
-// the arc's own bounding box) is exactly the flat "diameter" edge of the
-// half-donut in the shape's own authored coordinates, before the CSS flip.
-// Mapping it through getScreenCTM gives its true on-screen position either
-// way (the CTM already includes the cash gauge's scaleY(-1)). Also returns
-// the arc's own rendered width (post-transform, via getBoundingClientRect)
-// -- its actual outer diameter on screen, not assumed -- so the seam-cover
-// bar below can be sized to match exactly.
+// Same bg-arc lookup as positionGaugeDot. centerLocal (bottom-center of
+// the arc's bounding box) is the flat "diameter" edge of the half-donut
+// in its own authored coordinates, before the CSS flip. getScreenCTM
+// gives its true on-screen position either way -- the CTM already
+// includes the cash gauge's scaleY(-1). Also returns the arc's rendered
+// width (via getBoundingClientRect) so the seam-cover bar below can
+// match it exactly.
 function measureGaugeArc(divId) {
   const el = document.getElementById(divId);
   const bgPaths = Array.from(el.querySelectorAll('g.bg-arc path'));
@@ -461,24 +454,20 @@ function measureGaugeArc(divId) {
   return { seamY: pt.matrixTransform(ctm).y, width: bgPath.getBoundingClientRect().width };
 }
 
-// The dome and the U should meet exactly at the seam between them, but
-// Plotly centers each half-donut within its own margin-adjusted plot box
-// rather than pinning it to one edge -- so the CSS 50% split between the
-// two gauge-mini divs doesn't reliably land on the real seam (off by a few
-// px in practice), and even at the right Y the two rendered arcs can still
-// leave a hairline gap rather than touch. Measured directly off both arcs'
-// own rendered paths and averaged; the balance bar is pinned to that exact
-// pixel and widened to the arcs' own measured diameter (see the comment on
-// .ls-bar) so it doubles as a covering strip across the whole seam, not
-// just a thin bar floating over a visible gap.
+// The dome and the U should meet exactly at the seam. Plotly centers
+// each half-donut within its own margin-adjusted plot box rather than
+// pinning it to one edge, so the CSS 50% split between the two
+// gauge-mini divs doesn't reliably land on the real seam. Measured
+// directly off both arcs' rendered paths and averaged. The balance bar
+// is pinned to that exact pixel and widened to the arcs' measured
+// diameter (see .ls-bar), so it also covers the seam instead of
+// floating over a gap.
 //
-// The FILL (ls-bar), not the block's overall midpoint, is what needs to sit
-// on the seam -- .ls-block also contains the "Balance" title above the bar,
-// so centering the whole block on the seam left the title floating above it
-// and the bar sitting visibly below. .ls-block is offsetParent for its
-// children (it's position:absolute), so bar.offsetTop + half its own height
-// is exactly the bar's distance from the block's own top edge, independent
-// of where the block ends up -- subtracting that out targets the bar itself.
+// The FILL (ls-bar), not the block's overall midpoint, needs to sit on
+// the seam -- .ls-block also holds the "Balance" title above the bar.
+// .ls-block is position:absolute, so it's offsetParent for its
+// children: bar.offsetTop plus half its height is the bar's distance
+// from the block's own top edge. Subtracting that out targets the bar.
 function positionBalanceBar() {
   const beta = measureGaugeArc('gauge-beta');
   const cash = measureGaugeArc('gauge-cash');
@@ -493,16 +482,13 @@ function positionBalanceBar() {
   block.style.top = (seamY - container.getBoundingClientRect().top - barCenterOffset) + 'px';
 }
 
-// Fills grow outward FROM THE CENTER: green grows rightward with how much
-// of the account is allocated long, red grows leftward with how much is
-// allocated short -- each as a fraction of account_size, capped at half the
-// bar's width (so 100% allocated to one side fills that entire half, edge
-// to the seam). Both start exactly at the center, so they always meet there
-// with no gap -- a balanced, partially-allocated book shows a little green
-// and a little red meeting in the middle, each reaching out only as far as
-// its own side's allocation; fully-allocated-and-one-sided reaches the
-// outer edge. Based on capital actually committed (notional), not headcount
-// -- two positions sized very differently shouldn't count the same.
+// Fills grow outward from the center: green rightward with the account
+// fraction allocated long, red leftward with the fraction allocated
+// short, each capped at half the bar's width. 100% allocated to one
+// side fills that whole half, edge to seam. Both start at the center,
+// so they always meet with no gap. Based on capital committed
+// (notional), not headcount -- two very differently sized positions
+// shouldn't count the same.
 function renderLongShortBar(d) {
   const bar = document.getElementById('ls-bar');
   bar.innerHTML = '';
@@ -529,19 +515,18 @@ function renderLongShortBar(d) {
   bar.appendChild(mk(0.5 * (1 - longFrac)));         // empty, far right
 }
 
-// periodBeta: the currently-selected period's beta (same value shown in the
-// top KPI row, including its MIN_REGRESSION_DAYS floor for short periods) --
-// the gauge's fill now tracks this instead of always the all-time figure, so
-// it and the KPI row can never show two different numbers at once. Capital
-// utilization is NOT period-dependent (it's a "right now" reading, not a
-// windowed one) and is untouched.
+// periodBeta: the selected period's beta, same value as the top KPI row
+// (including its MIN_REGRESSION_DAYS floor for short periods). The
+// gauge's fill tracks this instead of the all-time figure, so the gauge
+// and KPI row never disagree. Capital utilization is a "right now"
+// reading, not period-dependent, and is untouched.
 function renderGauges(d, periodBeta, periodLabel) {
-  // Force a layout reflow before either gauge renders. Without this, beta
-  // (rendered first) gets measured by Plotly before the flex column has
-  // actually computed its 50/50 split -- capital (rendered second) then
-  // benefits from beta's own rendering having forced a reflow as a side
-  // effect, so it measures correctly while beta is stuck tiny. Reading
-  // offsetHeight forces the browser to settle layout synchronously first.
+  // Force a layout reflow before either gauge renders. Without this,
+  // beta (rendered first) gets measured by Plotly before the flex
+  // column computes its 50/50 split. Capital (rendered second) then
+  // measures correctly, since beta's own render forced a reflow as a
+  // side effect, leaving beta stuck tiny. Reading offsetHeight forces
+  // the browser to settle layout first.
   const betaWrap = document.getElementById('gauge-beta-wrap');
   const cashWrap = document.getElementById('gauge-cash-wrap');
   if (betaWrap) void betaWrap.offsetHeight;
@@ -557,8 +542,8 @@ function renderGauges(d, periodBeta, periodLabel) {
   const utilSeries = d.historic.capital_utilization_pct || [];
   const cash = utilSeries[utilSeries.length - 1] || 0;
   const avgUtil = utilSeries.length ? utilSeries.reduce((a, b) => a + b, 0) / utilSeries.length : null;
-  // Unlike beta and the long/short balance bar, capital utilization has no
-  // green/red status coding -- it always fills blue, regardless of level.
+  // Unlike beta and the long/short balance bar, capital utilization has
+  // no green/red status coding. It always fills blue, regardless of level.
   const cashP = renderCapitalGauge(cash, [0, 100], BLUE, BLUE_RGB, avgUtil);
 
   Promise.all([betaP, cashP]).then(positionBalanceBar);
@@ -597,9 +582,9 @@ function renderBubbleChart(d) {
     marker: { size: sizes, sizemode: 'area', sizeref, sizemin: 16,
       color: 'rgba(0,0,0,0)', line: { color: colors, width: 2.2 } },
     hovertemplate: '%{text}<br>%{y:.2f}% of account<extra></extra>', showlegend: false });
-  // The "all positions" marker gets its own very slight glow and fill,
-  // always on regardless of the page's global glow setting -- it's the one
-  // spot meant to read as slightly lifted off the flat aesthetic elsewhere.
+  // The "all positions" marker gets its own slight glow and fill, always
+  // on regardless of the page's global glow setting. It's the one spot
+  // meant to read as slightly lifted off the flat aesthetic elsewhere.
   traces.push({ x: [sumX], y: [sumY], mode: 'markers', type: 'scatter',
     marker: { size: [sumSize], sizemode: 'area', sizeref: sumSizeref, sizemin: 20, color: 'rgba(0,0,0,0)', line: { color: BLUE, width: 9 }, opacity: 0.1 },
     hoverinfo: 'skip', showlegend: false });
@@ -616,11 +601,11 @@ function renderBubbleChart(d) {
   }, PLOTLY_CONFIG);
 }
 
-// No visible text on the cells themselves -- at this size (60 in a row) text
-// would just be noise; the date/%/position-count detail lives entirely in
-// the native hover tooltip (el.title). Flat/zero days are left empty rather
-// than colored -- there's no "flat" hue in this palette anymore, just
-// green/red intensity or nothing.
+// No visible text on the cells themselves. At this size (60 in a row)
+// text would just be noise; the date/%/position-count detail lives in
+// the native hover tooltip (el.title). Flat/zero days are left empty,
+// not colored -- this palette has no "flat" hue, just green/red
+// intensity or nothing.
 function renderCalendarTiles(container, d, n) {
   const dates = d.historic.dates, eq = d.historic.equity_strategy_dollars;
   const accountSize = d.config.account_size;
@@ -721,16 +706,14 @@ function renderSelectedChart(d, key) {
     line: { color, width: 2, shape: 'spline', smoothing: 0.5 }, showlegend: false,
     hovertemplate: '%{x|%H:%M}: %{y:.1f}<extra></extra>' });
 
-  // Sits exactly ON the line, not floating at the raw entry_price (which is
-  // usually from a prior day and rarely matches where today's line actually
-  // sits) -- if the open_datetime falls inside today's window, mark the
-  // real point on the line closest to that moment; otherwise fall back to
-  // the line's own first point, still genuinely on the line. Only rendered
-  // for an actual open position, never a benchmark. Always blue, not
-  // colored by side or by the line's own up/down direction -- the line
-  // itself is already green/red for up/down, so a green-or-red dot on top
-  // of it reads ambiguously (is the color long/short, or the current move?);
-  // blue keeps it an unambiguous "here's the entry" marker.
+  // Sits exactly on the line, not at the raw entry_price (usually from a
+  // prior day, rarely matching where today's line sits). If open_datetime
+  // falls inside today's window, mark the closest real point on the
+  // line; otherwise use the line's first point. Only rendered for an
+  // open position, never a benchmark. Always blue -- the line is already
+  // green/red for up/down, so a colored dot on top would read as
+  // ambiguous (long/short, or the current move?). Blue keeps it a plain
+  // "here's the entry" marker.
   const pos = (d.open_positions || []).find(p => p.ticker === key);
   if (pos && t.length) {
     let idx = 0;
@@ -779,11 +762,11 @@ function renderRollingSharpeChart(d) {
     document.getElementById('chart-rolling-sharpe').innerHTML = '<div class="empty-note">Not enough daily return history yet for a 60-day window.</div>';
     return;
   }
-  // A light trailing average on top of the already-60-day-windowed values --
-  // spline shape alone only smooths the curve BETWEEN points, it doesn't
-  // reduce the day-to-day jitter in the values themselves, and cranking
-  // spline smoothing up further on genuinely noisy data risks overshoot
-  // (the curve bulging past the real data range).
+  // A light trailing average on top of the already-60-day-windowed
+  // values. Spline shape alone only smooths the curve between points; it
+  // doesn't reduce day-to-day jitter in the values themselves. Cranking
+  // spline smoothing up further on noisy data risks overshoot -- the
+  // curve bulging past the real data range.
   const smoothedValues = movingAverage(rs.values, 5);
   Plotly.newPlot('chart-rolling-sharpe',
     [{ x: rs.dates, y: smoothedValues, type: 'scatter', mode: 'lines',
@@ -791,9 +774,9 @@ function renderRollingSharpeChart(d) {
     belowFoldLayout(), PLOTLY_CONFIG);
 }
 
-// Trailing simple moving average, window-sized -- used for the smoothed
-// overlay line. Partial (shorter) window at the very start of the series
-// rather than leaving it undefined there.
+// Trailing simple moving average, window-sized. Used for the smoothed
+// overlay line. Partial (shorter) window at the very start of the
+// series, instead of leaving it undefined there.
 function movingAverage(arr, window) {
   const out = [];
   for (let i = 0; i < arr.length; i++) {
@@ -807,9 +790,9 @@ function movingAverage(arr, window) {
 
 function renderUtilizationChart(d) {
   const util = d.historic.capital_utilization_pct;
-  // Wider trailing window than before (16, not 10) -- a genuinely calmer
-  // overlay, not just a rendering trick, since utilization only samples at
-  // each new admission (see sizing.py) and is naturally spiky day to day.
+  // A wide trailing window (16 days) for a genuinely calmer overlay, not
+  // just a rendering trick. Utilization only samples at each new
+  // admission (see sizing.py) and is naturally spiky day to day.
   const smoothed = movingAverage(util, 16);
   Plotly.newPlot('chart-utilization', [
     { x: d.historic.dates, y: util, type: 'scatter', mode: 'lines',

@@ -2,10 +2,9 @@
 
 Two kinds of data are needed:
 - Benchmark daily closes over the full feed date range (historic view, alpha/beta).
-- A snapshot (last price + ~3mo avg volume) for every ticker traded, used both
-  to mark open (pending) positions to market and for the price/volume
-  compliance floors. Fetched as one batched call rather than per-ticker, since
-  a feed can easily touch 200+ tickers.
+- A snapshot (last price + ~3mo avg volume) for every ticker traded. Used to
+  mark open positions to market and for the price/volume compliance floors.
+  Fetched as one batched call, not per-ticker: a feed can touch 200+ tickers.
 """
 from __future__ import annotations
 
@@ -31,25 +30,21 @@ def benchmark_daily_returns(close: pd.DataFrame) -> pd.DataFrame:
 
 def fetch_intraday_today(tickers: list[str], asof_date=None) -> pd.DataFrame:
     """5-minute % change from each ticker's first bar of its most recent
-    session (columns = tickers, index = intraday timestamps). Used to compare
-    the open book's notional-weighted move so far today against benchmarks on
-    the same, apples-to-apples % basis.
+    session. Columns are tickers, index is intraday timestamps. Compares the
+    open book's notional-weighted move today against benchmarks on the same
+    % basis.
 
-    asof_date pins this to a SPECIFIC past session instead of whatever
-    "today" happens to be in real wall-clock time -- needed for a frozen/
-    static book (see build.py's freeze_asof), where re-running the pipeline
-    on a later real calendar day should reproduce the exact same "today"
-    view, not silently drift forward with real intraday prices for a book
-    that stopped trading on a fixed date. Only works within yfinance's
-    5-minute retention window (~60 days); an out-of-window asof_date just
-    yields an empty frame, same as any other fetch failure here.
+    asof_date pins this to one past session instead of real wall-clock
+    "today". Needed for a frozen/static book (see build.py's freeze_asof):
+    re-running the pipeline on a later day must reproduce the same "today"
+    view, not drift forward with live prices for a book that stopped
+    trading. Works only within yfinance's ~60-day 5-minute retention
+    window; an out-of-window asof_date returns an empty frame.
 
-    asof_date itself isn't guaranteed to be a trading day -- it's derived
-    from the feed's own last open/close timestamp (build.py), and a trade
-    can close on a weekend even though the market can't. A single-day query
-    on a non-trading date returns nothing, so this pulls a trailing week and
-    keeps only the most recent session at or before asof_date -- the same
-    "most recent session" behavior period="1d" gives for real "today".
+    asof_date may fall on a non-trading day -- it comes from the feed's
+    last open/close timestamp, and a trade can close on a weekend. A
+    single-day query then returns nothing, so this pulls a trailing week
+    and keeps only the most recent session at or before asof_date.
     """
     tickers = sorted(set(tickers))
     if asof_date is not None:
@@ -82,11 +77,10 @@ def fetch_intraday_today(tickers: list[str], asof_date=None) -> pd.DataFrame:
 def fetch_market_snapshot(tickers: list[str], asof_date=None) -> dict[str, dict]:
     """Last close price and ~3-month average volume for each ticker.
 
-    asof_date pins "last price" to a specific past close and the volume
-    average to the ~3 months ending there, instead of a literal live
-    snapshot -- same reasoning as fetch_intraday_today's asof_date: a frozen
-    book shouldn't mark itself to market against real-time prices that keep
-    moving on days after the book itself stopped trading.
+    asof_date pins "last price" to a specific past close, and the volume
+    average to the ~3 months ending there, instead of a live snapshot. Same
+    reasoning as fetch_intraday_today: a frozen book shouldn't mark itself
+    to market against prices that keep moving after it stopped trading.
     """
     tickers = sorted(set(tickers))
     # threads=False: yfinance's local sqlite cache isn't safe under concurrent

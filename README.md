@@ -68,12 +68,11 @@ at your own real CSV, and adjust `account_size` / `position_weight_pct`. Give
 it its own `output_dir` (e.g. `docs/data-personal`) so it doesn't clobber the
 demo data, then point `DATA_PATH` in `docs/app.js` at that same path.
 
-If your book is actively trading (new trades logged over time), leave
-`freeze_asof` unset — the dashboard will show real current benchmark data
-and live mark-to-market. If it's a frozen/static snapshot instead, set
-`freeze_asof: true` so the "today" view stays pinned to the feed's own last
-activity rather than drifting with real time (see the config schema note in
-`CLAUDE.md`, kept locally and not published).
+If your book is actively trading, leave `freeze_asof` unset: the
+dashboard shows real current benchmark data and live mark-to-market. For
+a frozen/static snapshot, set `freeze_asof: true` so the "today" view
+stays pinned to the feed's own last activity, not real time (see the
+config schema note in `CLAUDE.md`, kept locally and not published).
 
 `.gitignore` already excludes common real-data filenames
 (`feed/example_feed*.csv`, `docs/data/`, etc.) — if you name your own feed
@@ -86,11 +85,10 @@ or output directory differently, add it there too before committing.
 - Entry cost is `open_ask`, exit proceeds are `close_bid` (long-only
   reconciliation, regardless of the `position` tag).
 - `status` is the authoritative open/closed signal: exactly `open` or
-  `closed` (case-insensitive). `close_bid`/`close_ask` are `pending` on an
-  open row -- that's just a human-readable placeholder now, not something
-  the pipeline compares against. A real broker-exported feed needs its own
-  `status` column cleaned up to those two values before parsing it here;
-  there's no fallback to inferring open/closed from price fields.
+  `closed` (case-insensitive). `close_bid`/`close_ask` show `pending` on
+  an open row, for readability only. A real broker-exported feed needs
+  its own `status` column cleaned up to these two values before parsing
+  it here.
 
 ## Deploying to GitHub Pages
 
