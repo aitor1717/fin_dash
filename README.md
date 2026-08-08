@@ -70,8 +70,9 @@ python pipeline/build.py --config config.sample.yaml
 
 - Entry cost is `open_ask`, exit proceeds are `close_bid` (long-only
   reconciliation, regardless of the `position` tag).
-- `status` is the authoritative open/closed signal: exactly `open` or
-  `closed` (case-insensitive). `close_bid`/`close_ask` show `pending` on
-  an open row, for readability only. A real broker-exported feed needs
-  its own `status` column cleaned up to these two values before parsing
-  it here.
+- `status` is the authoritative open/closed signal: `open` or `closed`
+  (case-insensitive). A real broker export can also carry a stray third
+  value, `register` -- uncleaned data, not a real third state -- which is
+  resolved by `close_bid`'s content: a real number means closed, the
+  literal `pending` means still open. Any other status value is treated
+  as a data problem and the parser raises.
