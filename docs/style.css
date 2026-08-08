@@ -55,7 +55,8 @@ h1 {
 .topbar { flex: 0 0 auto; display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; }
 .title-frame { background: transparent; border: none; padding: 0; }
 .title-frame { display: flex; align-items: baseline; gap: 10px; }
-.sample-tag { font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.sample-tag, .updated-tag { font-size: 9px; font-weight: 500; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.tag-sep { font-size: 9px; color: var(--muted); opacity: .5; }
 
 .periods { display: flex; gap: 0; align-items: center; }
 .periods button {
@@ -194,6 +195,8 @@ h1 {
   flex: 0 0 auto; background: var(--card); padding: 6px 14px;
   display: flex; justify-content: center; gap: 8px; font-size: 9px; color: var(--muted); letter-spacing: .04em;
 }
+.footer a { color: inherit; text-decoration: none; }
+.footer a:hover { color: var(--text); }
 
 .empty-note { color: var(--muted); font-size: 11px; padding: 8px 0; text-align: center; }
 

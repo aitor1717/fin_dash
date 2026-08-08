@@ -4,17 +4,20 @@
 
 ![Dashboard preview](preview.png)
 
+The data shown is a synthetic sample made for this demo, not a real
+trading account.
+
 A self-refreshing dashboard for a trade-log CSV feed: historic and current-day
 performance vs. benchmarks, with standard portfolio/trade metrics plus an
 evaluation-style compliance panel (profit target, max loss, position
 concentration, price/volume floors).
 
-The demo data is **fully synthetic** (see
-[`pipeline/generate_sample_feed.py`](pipeline/generate_sample_feed.py)) —
-real, liquid tickers priced at their actual historical closes, but the
-trading activity itself (timing, side, win rate) is generated, not derived
-from any real account. Real trade history has no place in this repo and is
-gitignored; see "Running your own book" below.
+See [`pipeline/generate_sample_feed.py`](pipeline/generate_sample_feed.py)
+for how the sample data is built. Real, liquid tickers priced at their
+actual historical closes. The trading activity itself (timing, side, win
+rate) is generated, not derived from any real account. Real trade history
+has no place in this repo and is gitignored; see "Running your own book"
+below.
 
 ## How it works
 
