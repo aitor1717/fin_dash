@@ -849,6 +849,11 @@ async function loadAndRenderAll(path) {
 
   const lastDateStr = d.historic.dates[d.historic.dates.length - 1];
   const lastDate = new Date(lastDateStr);
+  const updatedTag = document.getElementById('updated-tag');
+  if (updatedTag) {
+    const monthYear = lastDate.toLocaleDateString(undefined, { month: 'long', year: 'numeric', timeZone: 'UTC' });
+    updatedTag.textContent = `Last updated ${monthYear}`;
+  }
   const defStart = new Date(lastDate); defStart.setDate(defStart.getDate() - 15);
   customStart = defStart.toISOString().slice(0, 10);
   customEnd = lastDateStr;
