@@ -15,7 +15,7 @@ gitignored; see "Running your own book" below.
 ## How it works
 
 ```
-feed/*.csv  --(pipeline/build.py)-->  site/data*/dashboard.json  --(site/index.html)-->  browser
+feed/*.csv  --(pipeline/build.py)-->  docs/data*/dashboard.json  --(docs/index.html)-->  browser
 ```
 
 The feed has no position-size or account-size field by design, so `build.py`
@@ -41,12 +41,12 @@ pip install pandas yfinance pyyaml numpy
 python pipeline/build.py --config config.sample.yaml
 ```
 
-This writes `site/data-sample/dashboard.json` (the demo dataset `site/app.js`
-loads by default). Open `site/index.html` directly in a browser, or serve
-the `site/` folder locally:
+This writes `docs/data-sample/dashboard.json` (the demo dataset `docs/app.js`
+loads by default). Open `docs/index.html` directly in a browser, or serve
+the `docs/` folder locally:
 
 ```bash
-python -m http.server --directory site 8000
+python -m http.server --directory docs 8000
 ```
 
 To regenerate the synthetic feed itself (new seed, different trade count,
@@ -61,18 +61,18 @@ python pipeline/build.py --config config.sample.yaml
 
 Copy `config.sample.yaml` (e.g. to `config.personal.yaml`), point `feed_path`
 at your own real CSV, and adjust `account_size` / `position_weight_pct`. Give
-it its own `output_dir` (e.g. `site/data-personal`) so it doesn't clobber the
-demo data, then point `DATA_PATH` in `site/app.js` at that same path.
+it its own `output_dir` (e.g. `docs/data-personal`) so it doesn't clobber the
+demo data, then point `DATA_PATH` in `docs/app.js` at that same path.
 
 If your book is actively trading (new trades logged over time), leave
 `freeze_asof` unset — the dashboard will show real current benchmark data
 and live mark-to-market. If it's a frozen/static snapshot instead, set
 `freeze_asof: true` so the "today" view stays pinned to the feed's own last
 activity rather than drifting with real time (see the config schema note in
-`CLAUDE.md`).
+`CLAUDE.md`, kept locally and not published).
 
 `.gitignore` already excludes common real-data filenames
-(`feed/example_feed*.csv`, `site/data/`, etc.) — if you name your own feed
+(`feed/example_feed*.csv`, `docs/data/`, etc.) — if you name your own feed
 or output directory differently, add it there too before committing.
 
 ## Feed schema
@@ -89,8 +89,8 @@ or output directory differently, add it there too before committing.
 
 ## Deploying to GitHub Pages
 
-Commit `site/` including `site/data-sample/dashboard.json` (the synthetic
-demo dataset), and point GitHub Pages at it (root or `/site` depending on
-your repo settings). The page is static — its data is only as fresh as the
-last local `build.py` run that was committed. Do not commit real trade data
-or its generated output; keep those local and gitignored.
+Commit `docs/` (including the generated `docs/data-sample/dashboard.json`),
+then in the repo's Settings → Pages, set the source branch with `/docs` as
+the folder. The page is static — its data is only as fresh as the last local
+`build.py` run that was committed. Do not commit real trade data or its
+generated output; keep those local and gitignored.
