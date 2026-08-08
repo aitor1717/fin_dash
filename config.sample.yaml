@@ -1,17 +1,15 @@
-# Fully synthetic demo book (see pipeline/generate_sample_feed.py) -- no real
-# trade history, safe to publish. Real, liquid tickers so yfinance resolves
-# benchmark/compliance data normally; every trade's timing and return is
-# generated from an invented-but-plausible distribution, not derived from
-# any real account.
+# Fully synthetic demo book (see pipeline/generate_sample_feed.py). No
+# real trade history; safe to publish. Real, liquid tickers, so yfinance
+# resolves benchmark/compliance data normally. Every trade's timing and
+# return comes from an invented-but-plausible distribution, not from any
+# real account.
 
 feed_path: feed/sample_feed.csv
 timezone: America/New_York
 
-# This book will never get new trades -- pin "today" to the last real
-# activity the feed has instead of real wall-clock time, so the benchmark
-# range, mark-to-market, and "today" chart stay reproducible instead of
-# drifting forward (and eventually looking broken/empty) every day this
-# gets rebuilt after the feed itself stops changing.
+# This book will never get new trades. Pin "today" to the feed's last
+# real activity, not real wall-clock time, so the benchmark range,
+# mark-to-market, and "today" chart stay reproducible on every rebuild.
 freeze_asof: true
 
 account_size: 40000

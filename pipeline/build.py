@@ -1,4 +1,4 @@
-"""Orchestrates the pipeline: feed -> sized trades -> metrics -> site/data JSON.
+"""Orchestrates the pipeline: feed -> sized trades -> metrics -> docs/data JSON.
 
 Usage: python pipeline/build.py [--config config.yaml]
 """
@@ -49,8 +49,8 @@ def build(config_path: str) -> None:
     cumulative_return_pct = 100 * (equity.iloc[-1] - account_size) / account_size if len(equity) else 0.0
 
     # Long-only and short-only slices, isolated as if each were the only book
-    # traded -- reuses the same sized trades already computed above, just
-    # filtered by side, so this is a re-aggregation, not a new calculation.
+    # traded. This filters the sized trades already computed above by side --
+    # a re-aggregation, not a new calculation.
     long_sized = [s for s in sizing_result.sized_trades if s.trade.position == "long"]
     short_sized = [s for s in sizing_result.sized_trades if s.trade.position == "short"]
     pnl_long = M.daily_pnl(long_sized, tz)
@@ -58,15 +58,12 @@ def build(config_path: str) -> None:
 
     start = trades[0].open_dt.tz_convert(tz).date()
     today = datetime.now(timezone.utc).date()
-    # freeze_asof: for a static/synthetic book (see config.sample.yaml) that
-    # will never get new trades, "today" should be pinned to the last real
-    # activity this data actually has -- not real wall-clock time, which
-    # would silently drift the benchmark range and live mark-to-market
-    # forward on every later run while the underlying feed stays frozen
-    # (the source going stale while parts of the display keep moving).
-    # Deliberately built from actual opens/closes only, not open positions'
-    # own speculative *scheduled* close_dt, which can land arbitrarily far
-    # in the future and isn't something that's actually happened yet.
+    # freeze_asof: for a static book (see config.sample.yaml) that never
+    # gets new trades, pin "today" to the feed's last real activity, not
+    # real wall-clock time. Otherwise the benchmark range and live
+    # mark-to-market drift forward on every later run while the feed stays
+    # frozen. Built from actual opens/closes only -- not an open position's
+    # own scheduled close_dt, which can land arbitrarily far in the future.
     asof_date = None
     if cfg.get("freeze_asof", False):
         last_activity_dt = max(
@@ -83,10 +80,10 @@ def build(config_path: str) -> None:
     try:
         bench_close = fetch_benchmark_history(benchmarks, start, end)
         bench_close.index = pd.DatetimeIndex(bench_close.index).tz_localize(None).normalize()
-        # yfinance can return a column per ticker with zero real rows (all-NaN)
-        # on a failed/rate-limited fetch instead of raising -- drop those
-        # columns so downstream code treats them as "unavailable", not silently
-        # propagates NaN (which isn't even valid JSON) into the dashboard.
+        # yfinance can return an all-NaN column on a failed/rate-limited fetch
+        # instead of raising. Drop those columns so downstream code treats
+        # them as unavailable, instead of propagating NaN (not valid JSON)
+        # into the dashboard.
         bench_close = bench_close.dropna(axis=1, how="all")
         bench_ret = benchmark_daily_returns(bench_close)
     except Exception as e:
@@ -120,12 +117,11 @@ def build(config_path: str) -> None:
     short_return_aligned = side_cum_pct(pnl_short)
 
     # True drawdown, from the full calendar-day curve -- not the benchmark
-    # trading-day-aligned one. The feed's scheduled close_datetimes can land
-    # on non-trading days (weekends); reindexing onto only benchmark trading
-    # days silently drops those P&L events from the running peak/trough,
-    # understating real drawdown. The aligned series below is still used for
-    # charting (so its x-axis matches the benchmark overlay) and for
-    # alpha/beta (which must line up with benchmark trading days).
+    # trading-day-aligned one. A trade's close_datetime can land on a
+    # weekend. Reindexing onto trading days only would drop those P&L
+    # events from the running peak/trough and understate drawdown. The
+    # aligned series below still drives charting (x-axis matches the
+    # benchmark overlay) and alpha/beta (must line up with trading days).
     dd = M.max_drawdown(equity_naive)
     strategy_daily_ret_aligned = equity_aligned.pct_change().fillna(0.0)
     roll_sharpe_60 = M.rolling_sharpe(strategy_daily_ret_aligned, 60)
@@ -142,8 +138,8 @@ def build(config_path: str) -> None:
     ticker_conc = M.ticker_concentration(sizing_result.sized_trades)
     closed_returns_pct = [t.pct_change for t in trades if not t.is_open]
 
-    # Synthetic what-if tickers (see simulate_scenario.py) aren't real symbols --
-    # skip them here rather than spending one failed network lookup each.
+    # Synthetic what-if tickers (see simulate_scenario.py) aren't real symbols.
+    # Skip them here instead of spending one failed network lookup each.
     all_tickers = sorted(set(t.ticker for t in trades if not t.ticker.startswith("SIM-")))
     print(f"Fetching market snapshot for {len(all_tickers)} tickers (price/volume compliance + mark-to-market)")
     try:
@@ -164,8 +160,8 @@ def build(config_path: str) -> None:
         live_price = snap["last_price"]
         if live_price is not None:
             price_move_pct = 100 * (live_price - t.entry_price) / t.entry_price
-            # A short profits from a price DROP -- the raw price move above
-            # is the opposite sign of the position's own P&L for a short.
+            # A short profits from a price drop. The raw price move above
+            # has the opposite sign of the position's own P&L for a short.
             unrealized_pct = -price_move_pct if t.position == "short" else price_move_pct
         else:
             unrealized_pct = t.pct_change
@@ -199,10 +195,9 @@ def build(config_path: str) -> None:
     if not intraday.empty:
         idx = intraday.index
         today_chart["timestamps"] = [ts.isoformat() for ts in idx]
-        # Every fetched ticker, not just benchmarks -- open positions' own
-        # intraday series were already being fetched above (today_tickers
-        # includes them) but discarded here; the per-position mini-chart
-        # needs them exposed too.
+        # Every fetched ticker, not just benchmarks. today_tickers already
+        # includes open positions' own intraday series; expose them here too
+        # for the per-position mini-chart.
         for col in intraday.columns:
             today_chart["series"][col] = [
                 round(float(v), 3) if pd.notna(v) else None for v in intraday[col]

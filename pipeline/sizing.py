@@ -1,11 +1,11 @@
 """Buying-power-capped position sizing allocator.
 
-The feed has no size data and trades overlap heavily (up to ~49 concurrent
-in the sample book). Each admitted trade risks a fixed weight `w` of
-account_size; walking trades in open-time order, a new trade is skipped
+The feed has no size data. Trades overlap heavily -- up to ~49 concurrent
+in the sample book. Each admitted trade risks a fixed weight `w` of
+account_size. Trades are walked in open-time order; a new trade is skipped
 (zero-filled) if it would push total open notional over 100% of
-account_size at the moment it opens -- a real buying-power constraint
-rather than unlimited leverage.
+account_size at the moment it opens. This models a real buying-power
+constraint, not unlimited leverage.
 """
 from __future__ import annotations
 
@@ -68,10 +68,10 @@ def size_trades(trades: list[Trade], account_size: float, weight_pct: float) -> 
 
 
 def daily_position_count(sized_trades: list[SizedTrade]) -> pd.Series:
-    """Timestamped snapshot of admitted (capital-cleared) concurrently-open
-    positions after each open/close event -- the same event-sweep shape as
-    utilization above, but a plain headcount rather than a dollar exposure.
-    Callers reindex/ffill this onto their own daily axis, same as utilization.
+    """Timestamped snapshot of admitted (capital-cleared) concurrent open
+    positions after each open/close event. Same event-sweep shape as
+    utilization above, but a headcount, not a dollar exposure. Callers
+    reindex/ffill this onto their own daily axis, same as utilization.
     """
     events = []
     for s in sized_trades:

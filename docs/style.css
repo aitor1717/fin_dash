@@ -1,7 +1,8 @@
 /* Editorial theme, ported from an early option-a.html + refined-2-shared.js
-   mockup -- near-black warm charcoal, muted desaturated green/red, flat
-   borderless cards, no glow (--glow-strength:0). This is the settled design
-   direction; the mockup exploration itself isn't part of the published repo. */
+   mockup. Near-black warm charcoal, muted desaturated green/red, flat
+   borderless cards, no glow (--glow-strength:0). This is the settled
+   design direction; the mockup exploration itself isn't part of the
+   published repo. */
 :root {
   --page: #121316;
   --card: #1a1b1f;
@@ -38,10 +39,10 @@ h1 {
   text-transform: uppercase;
 }
 
-/* The mockup's fixed, non-scrolling 100vh layout, kept intact as its own
-   section -- the page as a whole scrolls (for the below-fold cards), but
-   this section still fills exactly one screen on load, matching the
-   settled design. */
+/* The mockup's fixed, non-scrolling 100vh layout, kept intact as its
+   own section. The page as a whole scrolls (for the below-fold cards),
+   but this section still fills exactly one screen on load, matching
+   the settled design. */
 .viewport-section {
   height: 100vh;
   overflow: hidden;
@@ -94,19 +95,19 @@ h1 {
 .v.neutral-blue { color: var(--blue); }
 .v.neutral-red { color: var(--red); }
 
-/* Shared grid rows across both columns -- not independent flex columns --
-   so the bubble chart's bottom edge lands exactly where the main chart's
-   does, and the selected-ticker chart's bottom lands where the tiles row's
-   does. Row 1 is 1fr (chart-card / bench-row+bubble-card); row 2 is auto,
-   sized by the tiles-row's content (calendar/positions grids), with the
-   selected-card stretched to match it. */
+/* Shared grid rows across both columns, not independent flex columns.
+   The bubble chart's bottom edge then lands exactly where the main
+   chart's does, and the selected-ticker chart's bottom lands where the
+   tiles row's does. Row 1 is 1fr (chart-card / bench-row+bubble-card).
+   Row 2 is auto, sized by the tiles-row's content (calendar/positions
+   grids), with the selected-card stretched to match it. */
 .main-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 360px; grid-template-rows: 1fr auto; gap: 12px; }
 .chart-card { grid-column: 1; grid-row: 1; min-height: 0; }
 .right-top { grid-column: 2; grid-row: 1; min-height: 0; display: flex; flex-direction: column; gap: 10px; }
-/* The footer lives here, below selected-card, both in the right column's
-   row -- so tiles-row (left column, same row) naturally grows to match
-   that row's now-taller total height instead of leaving a separate empty
-   strip on the left where no footer exists. */
+/* The footer lives here, below selected-card, both in the right
+   column's row. tiles-row (left column, same row) then grows to match
+   that row's total height, instead of leaving an empty strip on the
+   left where no footer exists. */
 .tiles-row { grid-column: 1; grid-row: 2; display: flex; gap: 12px; }
 .right-bottom { grid-column: 2; grid-row: 2; min-height: 0; display: flex; flex-direction: column; gap: 8px; }
 .selected-card { flex: 1; min-height: 0; }
@@ -114,18 +115,18 @@ h1 {
 .tile-card.gauges { flex: 0.72; }
 .tile-card h2 { margin-bottom: 6px; }
 
-/* Twice as many, half the size -- no room (or need) for in-cell text at
-   this density, so identity moves entirely to the hover tooltip.
-   flex:1 + centered (not top-pinned) content: if tiles-row grows taller
-   than these grids' own content needs (e.g. to match the right column's
-   now-taller row), the extra space splits evenly above/below instead of
-   leaving a dead gap only at the bottom. */
+/* Twice as many cells, half the size. No room, or need, for in-cell
+   text at this density; identity moves entirely to the hover tooltip.
+   flex:1 with centered (not top-pinned) content: if tiles-row grows
+   taller than these grids need (e.g. to match the right column's row),
+   the extra space splits evenly above/below instead of leaving a dead
+   gap at the bottom. */
 .gridcal { display: grid; grid-template-columns: repeat(10, 1fr); gap: 2px; align-content: center; flex: 1; min-height: 0; }
 .gridN { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; align-content: center; flex: 1; min-height: 0; }
 .cal-cell { border-radius: 0; aspect-ratio: 1; }
 
-/* A wide color frame is the whole story here -- gain/loss regardless of
-   long or short, side and $ detail moved to hover. */
+/* A wide color frame is the whole story here: gain/loss, regardless of
+   long or short. Side and $ detail move to hover. */
 .pos-tile {
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   padding: 2px; font-size: 11px; gap: 2px; aspect-ratio: 1; cursor: pointer;
@@ -134,30 +135,33 @@ h1 {
 .pt-ticker { font-weight: 600; letter-spacing: .02em; color: var(--text); }
 .pt-pct { font-variant-numeric: tabular-nums; font-size: 10px; color: var(--muted); }
 
-/* A dome on top of a U: beta stays a normal gauge (flat bottom, arc up --
-   a dome), capital is mirrored on the VERTICAL axis only (scaleY(-1): flat
-   top, arc down -- a U) -- not a full 180deg rotation, which also mirrors
-   left-right and reverses the fill direction. The two gauge-mini halves sit
-   directly adjacent (no gap between them, no flex-basis given to anything
-   else in gauge-circle) so their SVG arcs meet edge-to-edge and read as one
-   unbroken circle.
-   Plotly's own built-in "number" is dropped (mode:'gauge' only, in app.js)
-   in favor of a custom name+value label per half -- own name badge (Beta /
-   Capital) so it's unambiguous which reading is which, and free placement
-   (beta's pulled up off the seam, capital's pushed down below it) instead
-   of fighting wherever Plotly happens to center its own number.
-   The long/short balance bar is lifted out of the flex flow entirely and
-   positioned by app.js's positionBalanceBar() directly over the measured
-   seam -- CSS only centers it horizontally; JS sets `top` precisely so the
-   BAR itself (not the title above it) lands on the seam.
-   Plotly draws each half's arc inset within its own margin-adjusted plot
-   box rather than flush to the shared edge, so however precisely the seam Y
-   is measured, the two rendered arcs can still leave a hairline gap right
-   at it. Rather than fight that further, ls-bar's own background (opaque,
-   matching the card) is widened by JS to the arc's own measured diameter --
-   it becomes a covering strip across the full seam instead of a 140px bar
-   floating over a visible gap, so the two halves read as one unbroken
-   circle with a clean equator line, not two disjoint arcs. */
+/* A dome on top of a U. Beta stays a normal gauge: flat bottom, arc up
+   (a dome). Capital is mirrored on the vertical axis only, scaleY(-1):
+   flat top, arc down (a U). Not a full 180deg rotation -- that would
+   also mirror left-right and reverse the fill direction. The two
+   gauge-mini halves sit directly adjacent, with no gap and no
+   flex-basis given to anything else in gauge-circle, so their SVG arcs
+   meet edge-to-edge and read as one circle.
+
+   Plotly's built-in "number" is dropped (mode:'gauge' only, in app.js)
+   for a custom name+value label per half. Each half gets its own name
+   badge (Beta / Capital), so the reading is unambiguous, plus free
+   placement: beta pulled up off the seam, capital pushed down below it.
+
+   The long/short balance bar is lifted out of the flex flow and
+   positioned by app.js's positionBalanceBar() directly over the
+   measured seam. CSS only centers it horizontally; JS sets `top`
+   precisely so the bar itself, not the title above it, lands on the
+   seam.
+
+   Plotly draws each half's arc inset within its own margin-adjusted
+   plot box, not flush to the shared edge. However precisely the seam Y
+   is measured, the two rendered arcs can still leave a hairline gap.
+   Rather than fight that, ls-bar's own background (opaque, matching
+   the card) is widened by JS to the arc's measured diameter. It
+   becomes a covering strip across the seam, not a 140px bar floating
+   over a gap, so the two halves read as one circle with a clean line,
+   not two disjoint arcs. */
 .gauge-circle { position: relative; display: flex; flex-direction: column; flex: 1; min-height: 0; }
 .gauge-mini { flex: 1; min-height: 0; position: relative; overflow: hidden; }
 .gauge-mini .g { position: absolute; top: 0; left: 0; width: 100%; height: 100%; transform-origin: center center; }
@@ -174,8 +178,8 @@ h1 {
 .ls-title { font-size: 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
 .ls-bar { display: flex; width: 140px; height: 4px; overflow: hidden; background: var(--card); }
 
-/* Slimmer -- about half the previous height -- without shrinking the
-   numbers themselves, just the padding around them. */
+/* Slim: the padding around the numbers is small, not the numbers
+   themselves. */
 .bench-row { display: flex; gap: 1px; flex: 0 0 50px; background: var(--card-border); }
 .bench-mini {
   flex: 1; background: var(--card); padding: 4px 9px; text-align: left;
@@ -193,12 +197,12 @@ h1 {
 
 .empty-note { color: var(--muted); font-size: 11px; padding: 8px 0; text-align: center; }
 
-/* Below-fold: analytics that don't have a slot in the ported viewport
-   layout above (rolling Sharpe, utilization, trade histogram, ticker
-   concentration). Same card language, one row. The column split (1fr 360px,
-   then 1/0.72/1 inside the first cell) mirrors main-grid's own split exactly
-   -- same padding, same 12px gaps -- so edges line up with calendar/gauges/
-   positions/today above. Only reached by scrolling. */
+/* Below-fold: analytics with no slot in the ported viewport layout
+   above (rolling Sharpe, utilization, trade histogram, ticker
+   concentration). Same card language, one row. The column split (1fr
+   360px, then 1/0.72/1 inside the first cell) mirrors main-grid's own
+   split: same padding, same 12px gaps. Edges then line up with
+   calendar/gauges/positions/today above. Only reached by scrolling. */
 .below-fold { padding: 0 26px 32px; }
 .chart-grid-below { display: grid; grid-template-columns: 1fr 360px; gap: 12px; }
 .below-left { display: flex; gap: 12px; min-width: 0; }
