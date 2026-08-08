@@ -2,6 +2,8 @@
 
 **Live demo: [aitor1717.github.io/fin_dash](https://aitor1717.github.io/fin_dash/)**
 
+![Dashboard preview](preview.png)
+
 A self-refreshing dashboard for a trade-log CSV feed: historic and current-day
 performance vs. benchmarks, with standard portfolio/trade metrics plus an
 evaluation-style compliance panel (profit target, max loss, position

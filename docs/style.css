@@ -1,7 +1,7 @@
-/* Editorial theme, ported from site/mockups/option-a.html + refined-2-shared.js
-   -- near-black warm charcoal, muted desaturated green/red, flat borderless
-   cards, no glow (--glow-strength:0). This is the settled design direction;
-   see site/mockups/ for the exploration that led here. */
+/* Editorial theme, ported from an early option-a.html + refined-2-shared.js
+   mockup -- near-black warm charcoal, muted desaturated green/red, flat
+   borderless cards, no glow (--glow-strength:0). This is the settled design
+   direction; the mockup exploration itself isn't part of the published repo. */
 :root {
   --page: #121316;
   --card: #1a1b1f;
