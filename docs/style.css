@@ -216,4 +216,43 @@ h1 {
 @media (max-width: 820px) {
   .chart-grid-below { grid-template-columns: 1fr; }
   .below-left { flex-direction: column; }
+  .below-fold { padding: 0 14px 24px; }
+
+  /* Below this width the fixed-100vh single-screen layout (viewport-section)
+     can't fit the desktop grid without clipping or overlap, so it switches
+     to a normal flowing, vertically-stacked page instead. Every element
+     that relied on a bounded ancestor height for its flex:1 children
+     (chart-card, right-top, tiles-row's gauge tile, right-bottom) gets an
+     explicit height here, since there's no longer a 100vh parent to
+     distribute. Plotly's `responsive:true` (PLOTLY_CONFIG in app.js) picks
+     up each new container size on its own -- no JS changes needed. */
+  .viewport-section { height: auto; overflow: visible; padding: 16px 14px; gap: 14px; }
+
+  .topbar { flex-wrap: wrap; row-gap: 8px; }
+  .title-frame { flex-wrap: wrap; row-gap: 4px; }
+  /* flex:1 1 100% forces this onto its own full-width line instead of
+     shrinking past its buttons' content size, which is what let the
+     row run off the right edge instead of wrapping. */
+  .periods { flex: 1 1 100%; flex-wrap: wrap; row-gap: 6px; }
+  .periods input[type=date] { margin-left: 0; }
+
+  .kpi-split { grid-template-columns: 1fr; }
+  /* grid with minmax(0,1fr) tracks, not flex-wrap: a flex item's default
+     min-width is its content size, which was pushing the row wider than
+     the screen instead of wrapping. Grid tracks shrink to 0 by default. */
+  .chart-kpi-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; }
+  .mini-kpi { min-width: 0; }
+
+  .main-grid { grid-template-columns: 1fr; grid-template-rows: none; }
+  .chart-card { grid-column: 1; grid-row: auto; height: 300px; }
+  .right-top { grid-column: 1; grid-row: auto; height: 320px; }
+  .tiles-row { grid-column: 1; grid-row: auto; flex-direction: column; }
+  .tile-card { flex: none; }
+  /* .tile-card.gauges has the same specificity as the base rule's own
+     flex: 0.72 (style.css:116), which wins on source order and leaves
+     flex-basis at 0% -- meaning `height` alone gets ignored for main-size
+     in this column-direction flex container. Setting flex-basis directly
+     is what actually gives it 260px. */
+  .tile-card.gauges { flex: 0 0 260px; }
+  .right-bottom { grid-column: 1; grid-row: auto; height: 320px; }
 }
