@@ -6,9 +6,11 @@ full open_bid/open_ask/close_bid/close_ask. In both eras the entry cost is
 open_ask and the exit proceeds are close_bid (these are long-only trades),
 which is what makes the `change` column reconcile as a % return.
 
-`close_bid == "pending"` is the authoritative signal that a trade is still
-open -- the `status` column does not cleanly separate open vs. closed and is
-kept only as a display tag.
+`status` is the authoritative signal that a trade is still open: standardized
+to exactly "open" or "closed" (case-insensitive) in the synthetic sample
+feed. A real broker-exported feed whose status values don't map that cleanly
+would need its own status column cleaned up to match before parsing it here
+-- there's no longer a close_bid-based fallback.
 """
 from __future__ import annotations
 
@@ -35,8 +37,7 @@ def parse_feed(csv_path: str) -> list[Trade]:
     df = pd.read_csv(csv_path)
     trades: list[Trade] = []
     for _, row in df.iterrows():
-        close_bid_raw = str(row["close_bid"]).strip()
-        is_open = close_bid_raw.lower() == "pending"
+        is_open = str(row["status"]).strip().lower() == "open"
         exit_price = None if is_open else float(row["close_bid"])
         # Normalize to UTC: the feed mixes -04:00/-05:00 offsets across DST
         # transitions, and a DatetimeIndex built from mixed fixed offsets

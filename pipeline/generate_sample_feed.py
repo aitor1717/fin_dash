@@ -253,11 +253,9 @@ def make_trade_row(rng: random.Random, lo: pd.Timestamp, hi: pd.Timestamp, end: 
         "close_ask": close_ask,
         "change": f"{pct:.4f}",
         "position": "short" if is_short else "long",
-        # parse_feed.py's own docstring notes the real feed's status column
-        # doesn't cleanly map to open/closed and is only ever carried through
-        # as a display tag -- this synthetic feed has no such ambiguity, so
-        # it can just say what it means: derived straight from the same
-        # pending bit (close_bid) that decides is_open above.
+        # The authoritative open/closed signal parse_feed.py reads -- kept
+        # to exactly these two values, matching the same is_open this row's
+        # close_bid/close_ask ("pending" vs. a real price) was set from above.
         "status": "open" if is_open else "closed",
     }
 

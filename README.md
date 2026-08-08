@@ -85,11 +85,12 @@ or output directory differently, add it there too before committing.
 
 - Entry cost is `open_ask`, exit proceeds are `close_bid` (long-only
   reconciliation, regardless of the `position` tag).
-- `close_bid == "pending"` means the trade is still open — this is what the
-  pipeline uses to separate open from closed, not the `status` column. In
-  the synthetic sample feed, `status` is just `open`/`closed` derived from
-  that same signal; a real broker-exported feed's status values may not map
-  as cleanly and are only ever carried through as a display tag.
+- `status` is the authoritative open/closed signal: exactly `open` or
+  `closed` (case-insensitive). `close_bid`/`close_ask` are `pending` on an
+  open row -- that's just a human-readable placeholder now, not something
+  the pipeline compares against. A real broker-exported feed needs its own
+  `status` column cleaned up to those two values before parsing it here;
+  there's no fallback to inferring open/closed from price fields.
 
 ## Deploying to GitHub Pages
 

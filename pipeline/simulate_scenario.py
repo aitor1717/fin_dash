@@ -72,7 +72,12 @@ def make_synthetic_rows(n: int, position: str, prefix: str, returns_pool, hold_p
             "close_ask": "",
             "change": f"{pct:.4f}",
             "position": position,
-            "status": "synthetic",
+            # Always closed by construction (make_synthetic_rows never
+            # produces an open trade) -- "closed", not a third status value,
+            # now that parse_feed.py's is_open check is status-driven. The
+            # SIM- ticker prefix and this notes field already flag these as
+            # synthetic; status doesn't need to carry that too.
+            "status": "closed",
             "notes": "synthetic what-if trade, not a real signal",
         })
     return rows
