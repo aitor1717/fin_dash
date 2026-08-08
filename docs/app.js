@@ -1,7 +1,8 @@
-// Ported from site/mockups/option-a.html + refined-2-shared.js (the settled
-// editorial design) plus the composite.js helpers that mockup relied on, and
-// four analytics charts from the old "precision dark" app.js that have no
-// slot in the ported layout (rendered below-fold instead -- see index.html).
+// Ported from an early option-a.html + refined-2-shared.js mockup (the
+// settled editorial design) plus the composite.js helpers that mockup
+// relied on, and four analytics charts from an earlier "precision dark"
+// app.js that have no slot in the ported layout (rendered below-fold
+// instead -- see index.html).
 //
 // Colors and glow intensity are read from CSS custom properties at runtime,
 // so a pure-CSS edit is enough to retheme.
