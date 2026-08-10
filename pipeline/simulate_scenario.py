@@ -53,22 +53,35 @@ def make_synthetic_rows(n: int, position: str, prefix: str, returns_pool, hold_p
                          window_start: pd.Timestamp, window_end: pd.Timestamp, rng: random.Random):
     rows = []
     span_hours = (window_end - window_start).total_seconds() / 3600
+    is_short = position == "short"
     for i in range(n):
-        pct = rng.choice(returns_pool)
+        # returns_pool is drawn from the real book's own closed-trade
+        # pct_change -- an all-long book, where a trade's own return equals
+        # the underlying price move. Reuse it as "the price move" here too,
+        # then flip the trade's own change for a short (same convention as
+        # generate_sample_feed.py): a short profits from the move a long
+        # loses on, not from the same signed return.
+        price_move_pct = rng.choice(returns_pool)
+        pct = -price_move_pct if is_short else price_move_pct
         hold_h = rng.choice(hold_pool)
         open_offset_h = rng.uniform(0, max(1.0, span_hours - hold_h))
         open_dt = window_start + pd.Timedelta(hours=open_offset_h)
         close_dt = open_dt + pd.Timedelta(hours=hold_h)
         entry_price = 100.0
-        exit_price = entry_price * (1 + pct / 100)
+        exit_price = entry_price * (1 + price_move_pct / 100)
+        # Small synthetic spread on the other side too, so a short (which
+        # parse_feed.py reconciles on open_bid/close_ask) has real numbers
+        # to read regardless of which side generated the row.
+        open_bid = entry_price * (1 - rng.uniform(0.0005, 0.002))
+        close_ask = exit_price * (1 + rng.uniform(0.0005, 0.002))
         rows.append({
             "open_datetime": open_dt.isoformat(),
             "close_datetime": close_dt.isoformat(),
             "ticker": f"{prefix}{i+1:04d}",
-            "open_bid": "",
+            "open_bid": f"{open_bid:.4f}",
             "open_ask": f"{entry_price:.4f}",
             "close_bid": f"{exit_price:.4f}",
-            "close_ask": "",
+            "close_ask": f"{close_ask:.4f}",
             "change": f"{pct:.4f}",
             "position": position,
             # Always closed by construction (make_synthetic_rows never
@@ -124,10 +137,13 @@ def main():
     # Verify the "uncorrelated" assumption rather than just asserting it.
     def row_to_trade(row):
         from parse_feed import Trade
+        is_short = row["position"] == "short"
+        entry_price = float(row["open_bid"] if is_short else row["open_ask"])
+        exit_price = float(row["close_ask"] if is_short else row["close_bid"])
         return Trade(
             open_dt=pd.Timestamp(row["open_datetime"]).tz_convert("UTC"),
             close_dt=pd.Timestamp(row["close_datetime"]).tz_convert("UTC"),
-            ticker=row["ticker"], entry_price=float(row["open_ask"]), exit_price=float(row["close_bid"]),
+            ticker=row["ticker"], entry_price=entry_price, exit_price=exit_price,
             pct_change=float(row["change"]), is_open=False, status=row["status"], position=row["position"],
         )
 

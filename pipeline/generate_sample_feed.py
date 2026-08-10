@@ -199,8 +199,8 @@ def make_trade_row(rng: random.Random, lo: pd.Timestamp, hi: pd.Timestamp, end: 
         if is_short:
             pct = -pct  # same underlying move, opposite side's payoff
         pct = soft_cap(pct, -18.0, 18.0, rng, 2.0)
-        close_bid = "pending"
-        close_ask = "pending"
+        close_bid = ""
+        close_ask = ""
     else:
         win = rng.random() * 100 < win_rate
         # Right-skewed win/loss magnitude distributions, medians close
