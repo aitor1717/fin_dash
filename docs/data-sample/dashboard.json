@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-10T04:13:50.536852+00:00",
+  "generated_at": "2026-08-10T05:18:44.565557+00:00",
   "config": {
     "account_size": 40000.0,
     "position_weight_pct": 1.5,
@@ -10,56 +10,56 @@
     ]
   },
   "summary": {
-    "cumulative_return_pct": 18.341,
-    "equity_dollars": 47076.54,
+    "cumulative_return_pct": 18.349,
+    "equity_dollars": 47079.67,
     "max_drawdown": {
       "max_drawdown_pct": -4.526523198439789,
       "peak_date": "2026-02-12",
       "trough_date": "2026-03-29",
       "recovery_date": "2026-04-17"
     },
-    "sharpe_ratio": 2.677,
-    "sortino_ratio": 4.799,
+    "sharpe_ratio": 2.678,
+    "sortino_ratio": 4.801,
     "alpha_beta": {
       "SPY": {
-        "alpha_annualized_pct": 21.245391591719283,
-        "beta": 0.08380911379312199,
-        "r_squared": 0.018170908433051913
+        "alpha_annualized_pct": 21.254471390115597,
+        "beta": 0.08381081517382033,
+        "r_squared": 0.01816781790006572
       },
       "QQQ": {
-        "alpha_annualized_pct": 21.39290092483671,
-        "beta": 0.07315568120006812,
-        "r_squared": 0.03301191652185531
+        "alpha_annualized_pct": 21.402372396964935,
+        "beta": 0.07312958919196925,
+        "r_squared": 0.03298145207004577
       },
       "DIA": {
-        "alpha_annualized_pct": 21.661442223648194,
-        "beta": 0.04721157788714892,
-        "r_squared": 0.005578969266036626
+        "alpha_annualized_pct": 21.670196154504247,
+        "beta": 0.04723311142638731,
+        "r_squared": 0.005582896307222418
       }
     },
-    "n_closed_trades": 834,
-    "win_rate_pct": 52.75779376498801,
-    "mean_return_pct": 1.4661276978417268,
-    "median_return_pct": 1.0486,
-    "std_return_pct": 15.963285217099303,
-    "skew": 0.12392061003071374,
-    "kurtosis": -0.610918688031266,
-    "avg_win_pct": 13.80419068181818,
+    "n_closed_trades": 835,
+    "win_rate_pct": 52.81437125748503,
+    "mean_return_pct": 1.4649976047904194,
+    "median_return_pct": 1.0026,
+    "std_return_pct": 15.953745452950045,
+    "skew": 0.12420660191293763,
+    "kurtosis": -0.6080301481164949,
+    "avg_win_pct": 13.774073469387757,
     "avg_loss_pct": -12.312419796954314,
-    "profit_factor": 1.2520566806650228,
-    "expectancy_pct": 1.4661276978417268,
-    "median_hold_hours": 28.90565120625,
-    "mean_hold_hours": 63.449199072553625,
+    "profit_factor": 1.252164388341812,
+    "expectancy_pct": 1.4649976047904194,
+    "median_hold_hours": 28.929104762777776,
+    "mean_hold_hours": 63.60481480220725,
     "unique_tickers": 56,
     "n_long": 773,
     "n_short": 77,
     "trades_per_day": 2.750809061488673,
     "concurrency": {
-      "mean": 14.538823529411765,
+      "mean": 14.458823529411765,
       "median": 12.0,
       "p90": 27.0,
       "p95": 30.0,
-      "p99": 34.50999999999999,
+      "p99": 34.0,
       "max": 37.0
     }
   },
@@ -434,12 +434,12 @@
         113.755,
         113.493,
         112.804,
-        113.838,
-        116.295,
-        116.4,
-        116.58,
-        117.775,
-        117.691
+        113.846,
+        116.303,
+        116.407,
+        116.588,
+        117.783,
+        117.699
       ],
       "SPY": [
         100.0,
@@ -1187,12 +1187,12 @@
       45502.08,
       45397.34,
       45121.48,
-      45535.25,
-      46518.15,
-      46559.81,
-      46632.18,
-      47110.08,
-      47076.54
+      45538.38,
+      46521.28,
+      46562.94,
+      46635.32,
+      47113.21,
+      47079.67
     ],
     "drawdown_pct": [
       0.0,
@@ -1375,7 +1375,7 @@
       -1.226,
       -1.453,
       -2.052,
-      -1.154,
+      -1.147,
       0.0,
       0.0,
       0.0,
@@ -1563,12 +1563,12 @@
       36.0,
       45.0,
       42.0,
-      45.0,
+      43.5,
+      39.0,
       40.5,
       42.0,
       43.5,
-      45.0,
-      52.5
+      51.0
     ],
     "open_position_count": [
       1,
@@ -1751,12 +1751,12 @@
       20,
       23,
       24,
-      28,
-      26,
-      28,
+      27,
       25,
+      27,
       24,
-      29
+      23,
+      28
     ],
     "long_return_pct": [
       0.0,
@@ -1939,12 +1939,12 @@
       14.015,
       13.753,
       13.063,
-      13.855,
-      15.78,
-      15.884,
-      16.441,
-      17.753,
-      17.932
+      13.863,
+      15.788,
+      15.892,
+      16.449,
+      17.761,
+      17.94
     ],
     "short_return_pct": [
       0.0,
@@ -2386,12 +2386,12 @@
         2.976,
         3.558,
         3.245,
-        3.491,
-        4.021,
-        3.787,
-        3.92,
-        4.444,
-        4.324
+        3.493,
+        4.023,
+        3.789,
+        3.922,
+        4.446,
+        4.326
       ]
     }
   },
@@ -2399,27 +2399,27 @@
     {
       "ticker": "V",
       "pnl_dollars": 1026.1362,
-      "share_of_total_pct": 13.986720921398108
+      "share_of_total_pct": 13.980746734375726
     },
     {
       "ticker": "PLTR",
       "pnl_dollars": 782.2284,
-      "share_of_total_pct": 10.662142440342489
+      "share_of_total_pct": 10.657588289776687
     },
     {
       "ticker": "NOW",
       "pnl_dollars": 746.5848000000001,
-      "share_of_total_pct": 10.176303342341713
+      "share_of_total_pct": 10.17195670958159
     },
     {
       "ticker": "CSCO",
       "pnl_dollars": 628.9134,
-      "share_of_total_pct": 8.572386598901412
+      "share_of_total_pct": 8.568725051562488
     },
     {
       "ticker": "WMT",
       "pnl_dollars": 565.989,
-      "share_of_total_pct": 7.714697315601179
+      "share_of_total_pct": 7.711402115472179
     }
   ],
   "trade_returns_pct": [
@@ -3133,6 +3133,7 @@
     7.7789,
     6.6328,
     37.1625,
+    0.5225,
     19.819,
     27.5326,
     -8.2104,
@@ -3269,18 +3270,6 @@
       "unrealized_pct": -12.643,
       "notional_dollars": 600.0,
       "unrealized_dollars": -75.86,
-      "capital_admitted": true
-    },
-    {
-      "ticker": "INTU",
-      "side": "long",
-      "open_datetime": "2026-07-16T13:51:42+00:00",
-      "scheduled_close_datetime": "2026-08-12T04:11:21.499881024+00:00",
-      "entry_price": 294.79,
-      "live_price": 316.07000732421875,
-      "unrealized_pct": 7.219,
-      "notional_dollars": 600.0,
-      "unrealized_dollars": 43.31,
       "capital_admitted": true
     },
     {
@@ -3454,14 +3443,14 @@
   ],
   "compliance": {
     "profit_target_pct": 15.0,
-    "progress_to_target_pct": 122.27504999999996,
+    "progress_to_target_pct": 122.32729999999998,
     "max_loss_pct": 7.0,
     "distance_to_max_loss_pct": 2.473476801560211,
     "concentration_band_pct": [
       30.0,
       50.0
     ],
-    "top_position_concentration_pct": 13.986720921398108,
+    "top_position_concentration_pct": 13.980746734375726,
     "concentration_status": "ok",
     "pct_trades_skipped_capital": 0.0,
     "min_share_price": 0.1,
