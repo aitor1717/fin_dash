@@ -31,6 +31,7 @@ docs/data-halved*/
 # Unrelated personal planning doc that ended up in this working directory --
 # not part of the dashboard project, not meant to be public.
 /ttp-deployment-runbook.html
+/project-pipeline-memoir-fin-dash.html
 
 # Internal working notes, not meant to be public.
 /CLAUDE.md
