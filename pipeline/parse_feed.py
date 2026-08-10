@@ -1,16 +1,17 @@
 """Parse the raw trade-log CSV feed into normalized trade records.
 
 The feed has two eras. Early rows populate only open_ask/close_bid. Later
-rows also populate open_bid/close_ask. Both eras use open_ask as entry cost
-and close_bid as exit proceeds (long-only trades). This is why `change`
-reconciles as a % return.
+rows also populate open_bid/close_ask. A long trade reconciles on open_ask
+(entry cost) and close_bid (exit proceeds) -- realistic execution against
+the spread, buying at the ask and selling at the bid. A short trade
+reconciles the other way: open_bid (entry proceeds -- selling to open) and
+close_ask (exit cost -- buying to cover). No real trade has been short yet,
+so this side is only exercised by the synthetic generators; an old-era row
+missing the bid/ask a short needs raises rather than reconciling on the
+wrong side.
 
 `status` decides open vs. closed: "open" or "closed" (case-insensitive).
-A real broker export can also carry a stray third value, "register" --
-not a real lifecycle state, just uncleaned data -- which is normalized
-by content instead of failing: a numeric `close_bid` means the trade is
-actually closed, the literal "pending" placeholder means it's still
-open. Any other status value is a genuine data problem and raises.
+Any other status value is a genuine data problem and raises.
 """
 from __future__ import annotations
 
@@ -42,17 +43,38 @@ def parse_feed(csv_path: str) -> list[Trade]:
             is_open = True
         elif status_norm == "closed":
             is_open = False
-        elif status_norm == "register":
-            # Stray uncleaned status, not a real third lifecycle state --
-            # resolve it from close_bid's content instead.
-            is_open = str(row["close_bid"]).strip().lower() == "pending"
         else:
             raise ValueError(
                 f"Unrecognized status {row['status']!r} for {row['ticker']} "
                 f"opened {row['open_datetime']} -- clean the feed's status "
                 f"column to 'open'/'closed' before parsing it here."
             )
-        exit_price = None if is_open else float(row["close_bid"])
+
+        position = str(row["position"]).strip()
+        is_short = position.lower() == "short"
+        entry_col = "open_bid" if is_short else "open_ask"
+        exit_col = "close_ask" if is_short else "close_bid"
+
+        entry_raw = row[entry_col]
+        if pd.isna(entry_raw):
+            raise ValueError(
+                f"Short trade for {row['ticker']} opened {row['open_datetime']} "
+                f"has no {entry_col} -- a short needs its own side of the "
+                f"spread to reconcile; this row only has the long-side columns."
+            )
+        entry_price = float(entry_raw)
+
+        exit_price = None
+        if not is_open:
+            exit_raw = row[exit_col]
+            if pd.isna(exit_raw):
+                raise ValueError(
+                    f"Short trade for {row['ticker']} closed {row['close_datetime']} "
+                    f"has no {exit_col} -- a short needs its own side of the "
+                    f"spread to reconcile; this row only has the long-side columns."
+                )
+            exit_price = float(exit_raw)
+
         # Normalize to UTC. The feed mixes -04:00/-05:00 offsets across DST
         # transitions. Pandas errors on a DatetimeIndex built from mixed
         # fixed offsets unless every timestamp shares one tz.
@@ -61,12 +83,12 @@ def parse_feed(csv_path: str) -> list[Trade]:
                 open_dt=pd.Timestamp(row["open_datetime"]).tz_convert("UTC"),
                 close_dt=pd.Timestamp(row["close_datetime"]).tz_convert("UTC"),
                 ticker=str(row["ticker"]).strip(),
-                entry_price=float(row["open_ask"]),
+                entry_price=entry_price,
                 exit_price=exit_price,
                 pct_change=float(row["change"]),
                 is_open=is_open,
                 status=str(row["status"]).strip(),
-                position=str(row["position"]).strip(),
+                position=position,
             )
         )
     trades.sort(key=lambda t: t.open_dt)

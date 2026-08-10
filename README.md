@@ -68,11 +68,8 @@ python pipeline/build.py --config config.sample.yaml
 
 `open_datetime,close_datetime,ticker,open_bid,open_ask,close_bid,close_ask,change,position,status,notes`
 
-- Entry cost is `open_ask`, exit proceeds are `close_bid` (long-only
-  reconciliation, regardless of the `position` tag).
-- `status` is the authoritative open/closed signal: `open` or `closed`
-  (case-insensitive). A real broker export can also carry a stray third
-  value, `register` -- uncleaned data, not a real third state -- which is
-  resolved by `close_bid`'s content: a real number means closed, the
-  literal `pending` means still open. Any other status value is treated
-  as a data problem and the parser raises.
+Long trades reconcile on the ask to open and the bid to close (`open_ask`
+entry, `close_bid` exit); short trades reconcile the other way (`open_bid`
+entry, `close_ask` exit). `status` (`open`/`closed`, case-insensitive) is
+the authoritative lifecycle signal -- anything else is a data problem and
+the parser raises.

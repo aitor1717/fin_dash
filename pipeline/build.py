@@ -178,7 +178,6 @@ def build(config_path: str) -> None:
             "notional_dollars": round(notional, 2),
             "unrealized_dollars": round(notional * unrealized_pct / 100, 2),
             "capital_admitted": bool(sized and sized.admitted),
-            "status": t.status,
         })
 
     today_tickers = sorted(set(benchmarks) | {

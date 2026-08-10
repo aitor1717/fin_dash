@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-08T02:32:37.450701+00:00",
+  "generated_at": "2026-08-10T00:08:16.394183+00:00",
   "config": {
     "account_size": 40000.0,
     "position_weight_pct": 1.5,
@@ -22,19 +22,19 @@
     "sortino_ratio": 4.799,
     "alpha_beta": {
       "SPY": {
-        "alpha_annualized_pct": 21.245392970432764,
-        "beta": 0.08380909340848543,
-        "r_squared": 0.018170883344725497
+        "alpha_annualized_pct": 21.245395944196456,
+        "beta": 0.08380887479071313,
+        "r_squared": 0.01817081427984757
       },
       "QQQ": {
-        "alpha_annualized_pct": 21.39290092483671,
-        "beta": 0.07315568120006812,
-        "r_squared": 0.03301191652185531
+        "alpha_annualized_pct": 21.39290078129882,
+        "beta": 0.07315575519780933,
+        "r_squared": 0.03301199533414889
       },
       "DIA": {
-        "alpha_annualized_pct": 21.661440256439455,
-        "beta": 0.04721172482492139,
-        "r_squared": 0.005579004147546862
+        "alpha_annualized_pct": 21.66144049066222,
+        "beta": 0.047211710414206624,
+        "r_squared": 0.005579000756663732
       }
     },
     "n_closed_trades": 834,
@@ -725,7 +725,7 @@
         94.239,
         93.941,
         92.205,
-        93.264,
+        93.263,
         92.626,
         93.235,
         91.01,
@@ -798,7 +798,7 @@
         113.151,
         114.773,
         112.647,
-        112.967,
+        112.966,
         114.847,
         115.201,
         113.014,
@@ -3269,21 +3269,19 @@
       "unrealized_pct": -12.643,
       "notional_dollars": 600.0,
       "unrealized_dollars": -75.86,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "INTU",
       "side": "short",
       "open_datetime": "2026-07-16T13:51:42+00:00",
       "scheduled_close_datetime": "2026-08-12T04:11:21.499881024+00:00",
-      "entry_price": 294.79,
+      "entry_price": 294.51,
       "live_price": 316.07000732421875,
-      "unrealized_pct": -7.219,
+      "unrealized_pct": -7.321,
       "notional_dollars": 600.0,
-      "unrealized_dollars": -43.31,
-      "capital_admitted": true,
-      "status": "open"
+      "unrealized_dollars": -43.92,
+      "capital_admitted": true
     },
     {
       "ticker": "TXN",
@@ -3295,8 +3293,7 @@
       "unrealized_pct": -2.434,
       "notional_dollars": 600.0,
       "unrealized_dollars": -14.61,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "CRWD",
@@ -3308,8 +3305,7 @@
       "unrealized_pct": 1.295,
       "notional_dollars": 600.0,
       "unrealized_dollars": 7.77,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "INTU",
@@ -3321,8 +3317,7 @@
       "unrealized_pct": 6.661,
       "notional_dollars": 600.0,
       "unrealized_dollars": 39.97,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "CSCO",
@@ -3334,8 +3329,7 @@
       "unrealized_pct": 0.355,
       "notional_dollars": 600.0,
       "unrealized_dollars": 2.13,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "PLTR",
@@ -3347,8 +3341,7 @@
       "unrealized_pct": 0.049,
       "notional_dollars": 600.0,
       "unrealized_dollars": 0.29,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "ABNB",
@@ -3360,8 +3353,7 @@
       "unrealized_pct": -0.974,
       "notional_dollars": 600.0,
       "unrealized_dollars": -5.84,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "PANW",
@@ -3373,8 +3365,7 @@
       "unrealized_pct": 5.628,
       "notional_dollars": 600.0,
       "unrealized_dollars": 33.77,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "MSFT",
@@ -3386,8 +3377,7 @@
       "unrealized_pct": 3.019,
       "notional_dollars": 600.0,
       "unrealized_dollars": 18.12,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "PYPL",
@@ -3399,8 +3389,7 @@
       "unrealized_pct": -0.763,
       "notional_dollars": 600.0,
       "unrealized_dollars": -4.58,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "XOM",
@@ -3412,21 +3401,19 @@
       "unrealized_pct": -0.975,
       "notional_dollars": 600.0,
       "unrealized_dollars": -5.85,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "AVGO",
       "side": "short",
       "open_datetime": "2026-07-30T16:23:09+00:00",
       "scheduled_close_datetime": "2026-08-04T10:38:34.991923977+00:00",
-      "entry_price": 387.84,
+      "entry_price": 387.45,
       "live_price": 389.2799987792969,
-      "unrealized_pct": -0.371,
+      "unrealized_pct": -0.472,
       "notional_dollars": 600.0,
-      "unrealized_dollars": -2.23,
-      "capital_admitted": true,
-      "status": "open"
+      "unrealized_dollars": -2.83,
+      "capital_admitted": true
     },
     {
       "ticker": "ADBE",
@@ -3438,8 +3425,7 @@
       "unrealized_pct": 0.0,
       "notional_dollars": 600.0,
       "unrealized_dollars": 0.0,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "BA",
@@ -3451,21 +3437,19 @@
       "unrealized_pct": -0.0,
       "notional_dollars": 600.0,
       "unrealized_dollars": -0.0,
-      "capital_admitted": true,
-      "status": "open"
+      "capital_admitted": true
     },
     {
       "ticker": "AAPL",
       "side": "short",
       "open_datetime": "2026-07-31T19:43:51+00:00",
       "scheduled_close_datetime": "2026-08-20T12:35:31.826229088+00:00",
-      "entry_price": 308.91,
+      "entry_price": 308.72,
       "live_price": 308.9100036621094,
-      "unrealized_pct": -0.0,
+      "unrealized_pct": -0.062,
       "notional_dollars": 600.0,
-      "unrealized_dollars": -0.0,
-      "capital_admitted": true,
-      "status": "open"
+      "unrealized_dollars": -0.37,
+      "capital_admitted": true
     }
   ],
   "compliance": {
