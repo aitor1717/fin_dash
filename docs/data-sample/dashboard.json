@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-08-10T00:08:16.394183+00:00",
+  "generated_at": "2026-08-10T04:13:50.536852+00:00",
   "config": {
     "account_size": 40000.0,
     "position_weight_pct": 1.5,
@@ -22,19 +22,19 @@
     "sortino_ratio": 4.799,
     "alpha_beta": {
       "SPY": {
-        "alpha_annualized_pct": 21.245395944196456,
-        "beta": 0.08380887479071313,
-        "r_squared": 0.01817081427984757
+        "alpha_annualized_pct": 21.245391591719283,
+        "beta": 0.08380911379312199,
+        "r_squared": 0.018170908433051913
       },
       "QQQ": {
-        "alpha_annualized_pct": 21.39290078129882,
-        "beta": 0.07315575519780933,
-        "r_squared": 0.03301199533414889
+        "alpha_annualized_pct": 21.39290092483671,
+        "beta": 0.07315568120006812,
+        "r_squared": 0.03301191652185531
       },
       "DIA": {
-        "alpha_annualized_pct": 21.66144049066222,
-        "beta": 0.047211710414206624,
-        "r_squared": 0.005579000756663732
+        "alpha_annualized_pct": 21.661442223648194,
+        "beta": 0.04721157788714892,
+        "r_squared": 0.005578969266036626
       }
     },
     "n_closed_trades": 834,
@@ -51,8 +51,8 @@
     "median_hold_hours": 28.90565120625,
     "mean_hold_hours": 63.449199072553625,
     "unique_tickers": 56,
-    "n_long": 772,
-    "n_short": 78,
+    "n_long": 773,
+    "n_short": 77,
     "trades_per_day": 2.750809061488673,
     "concurrency": {
       "mean": 14.538823529411765,
@@ -725,7 +725,7 @@
         94.239,
         93.941,
         92.205,
-        93.263,
+        93.264,
         92.626,
         93.235,
         91.01,
@@ -798,7 +798,7 @@
         113.151,
         114.773,
         112.647,
-        112.966,
+        112.967,
         114.847,
         115.201,
         113.014,
@@ -3273,14 +3273,14 @@
     },
     {
       "ticker": "INTU",
-      "side": "short",
+      "side": "long",
       "open_datetime": "2026-07-16T13:51:42+00:00",
       "scheduled_close_datetime": "2026-08-12T04:11:21.499881024+00:00",
-      "entry_price": 294.51,
+      "entry_price": 294.79,
       "live_price": 316.07000732421875,
-      "unrealized_pct": -7.321,
+      "unrealized_pct": 7.219,
       "notional_dollars": 600.0,
-      "unrealized_dollars": -43.92,
+      "unrealized_dollars": 43.31,
       "capital_admitted": true
     },
     {
