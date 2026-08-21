@@ -17,7 +17,10 @@ const GREEN = cv('--green', '#2be8a8'), RED = cv('--red', '#ff5470'), GRAY = cv(
 const MUTED = cv('--muted', '#7a8096'), GRID = cv('--grid', 'rgba(255,255,255,0.07)');
 const GREEN_RGB = hexToRgb(GREEN), RED_RGB = hexToRgb(RED), BLUE_RGB = hexToRgb(BLUE);
 const GLOW = parseFloat(cv('--glow-strength', '1')) || 0;
-const DAY_PERIODS = { '1d': 1, '1m': 30, '6m': 182, '1y': 365, all: Infinity };
+// d.historic.dates is trading-day-aligned (build.py reindexes onto the
+// benchmark's own index), so these are trading-day counts, not calendar
+// days -- ~21/month, ~252/year.
+const DAY_PERIODS = { '1d': 1, '1m': 21, '6m': 126, '1y': 252, all: Infinity };
 // Beta/alpha are a regression coefficient: meaningless, or wildly noisy,
 // from a handful of points. Unlike return/Sharpe/drawdown (well-defined
 // for any window length), the regression always uses at least this many
@@ -544,7 +547,15 @@ function renderGauges(d, periodBeta, periodLabel) {
   const avgUtil = utilSeries.length ? utilSeries.reduce((a, b) => a + b, 0) / utilSeries.length : null;
   // Unlike beta and the long/short balance bar, capital utilization has
   // no green/red status coding. It always fills blue, regardless of level.
-  const cashP = renderCapitalGauge(cash, [0, 100], BLUE, BLUE_RGB, avgUtil);
+  // Range is sized to the data, not hardcoded to [0, 100] -- this repo
+  // models no margin/leverage, but a value can still exceed 100% between
+  // consecutive util samples, and a hardcoded ceiling would clamp the
+  // avg-utilization dot to the rightmost edge instead of pinning it at
+  // its real position. 100 stays the floor so a normal (<=100%) book
+  // still gets the full gauge width; headroom rounds up to the nearest 10.
+  const utilCeiling = Math.max(100, cash, avgUtil || 0);
+  const utilMax = Math.ceil(utilCeiling / 10) * 10;
+  const cashP = renderCapitalGauge(cash, [0, utilMax], BLUE, BLUE_RGB, avgUtil);
 
   Promise.all([betaP, cashP]).then(positionBalanceBar);
 }
