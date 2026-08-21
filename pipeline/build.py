@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 import pandas as pd
 import yaml
 
-from parse_feed import parse_feed, open_trades
+from parse_feed import parse_feed, open_trades, cap_premature_close_dates
 from sizing import size_trades, daily_position_count
 from market_data import fetch_benchmark_history, fetch_market_snapshot, benchmark_daily_returns, fetch_intraday_today
 import metrics as M
@@ -38,6 +38,7 @@ def build(config_path: str) -> None:
 
     print(f"Parsing feed: {cfg['feed_path']}")
     trades = parse_feed(cfg["feed_path"])
+    trades = cap_premature_close_dates(trades, pd.Timestamp.now(tz="UTC"))
     print(f"  {len(trades)} trades, {len(open_trades(trades))} currently open")
 
     print(f"Sizing trades (account_size={account_size}, weight={weight_pct}%)")
@@ -92,6 +93,17 @@ def build(config_path: str) -> None:
         bench_ret = pd.DataFrame()
 
     trading_days = bench_close.index if len(bench_close) else pd.date_range(start, end, freq="D")
+    # yfinance can lag posting the current session's own daily bar (e.g.
+    # running mid-session or shortly after close). If `end` (today, or the
+    # frozen asof date) isn't in the benchmark's own index yet, any trade
+    # whose close just got capped to `end` by cap_premature_close_dates
+    # above would silently fall outside every series reindexed onto
+    # trading_days -- not deferred to a future date, just dropped, until a
+    # later run finally sees the bar and the P&L jumps in retroactively.
+    # Union it in explicitly rather than leaving it to chance.
+    end_ts = pd.Timestamp(end)
+    if end_ts not in trading_days:
+        trading_days = trading_days.append(pd.DatetimeIndex([end_ts])).sort_values()
 
     equity_naive = equity.copy()
     equity_naive.index = pd.DatetimeIndex(equity_naive.index).tz_localize(None).normalize()

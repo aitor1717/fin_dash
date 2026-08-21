@@ -15,6 +15,7 @@ Any other status value is a genuine data problem and raises.
 """
 from __future__ import annotations
 
+import dataclasses
 from dataclasses import dataclass
 from datetime import datetime
 
@@ -93,6 +94,24 @@ def parse_feed(csv_path: str) -> list[Trade]:
         )
     trades.sort(key=lambda t: t.open_dt)
     return trades
+
+
+def cap_premature_close_dates(trades: list[Trade], now: pd.Timestamp) -> list[Trade]:
+    """A closed trade's close_dt is a real, already-happened close -- unlike
+    an open trade's, which may legitimately be a scheduled/target close far
+    in the future. If the feed ever records a "closed" row whose close_dt
+    is still in the future (e.g. a scheduled timestamp left in place instead
+    of updated to the real execution time), cap it at `now` rather than
+    trusting it: every downstream consumer keyed on close_dt (equity curve,
+    sizing's close-time heap, freeze_asof's last-activity date, trade
+    stats) would otherwise bucket a real, already-realized P&L event into
+    the future instead of today. Status, is_open, and exit_price are left
+    untouched -- only the timestamp is corrected.
+    """
+    return [
+        dataclasses.replace(t, close_dt=now) if not t.is_open and t.close_dt > now else t
+        for t in trades
+    ]
 
 
 def closed_trades(trades: list[Trade]) -> list[Trade]:

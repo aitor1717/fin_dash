@@ -107,4 +107,29 @@ def fetch_market_snapshot(tickers: list[str], asof_date=None) -> dict[str, dict]
             }
         except Exception:
             out[t] = {"last_price": None, "avg_volume": None}
+
+    # The daily bar above is regular-session-only and never updates again
+    # once it prints at the close, so a genuinely live snapshot (not a
+    # frozen/backtested one) goes stale for the rest of the day/evening
+    # while the stock keeps moving in extended-hours trading. Overlay the
+    # last available extended-hours minute bar on top of last_price only --
+    # avg_volume stays regular-session-based. Best-effort: a failed live
+    # fetch just leaves the daily close in place.
+    if asof_date is None:
+        try:
+            live = yf.download(
+                tickers, period="1d", interval="1m", prepost=True,
+                progress=False, auto_adjust=True, group_by="ticker", threads=False,
+            )
+            for t in tickers:
+                try:
+                    sub = live[t] if len(tickers) > 1 else live
+                    closes = sub["Close"].dropna()
+                    if len(closes):
+                        out[t]["last_price"] = float(closes.iloc[-1])
+                except Exception:
+                    continue
+        except Exception:
+            pass
+
     return out
