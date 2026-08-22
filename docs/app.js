@@ -19,8 +19,12 @@ const GREEN_RGB = hexToRgb(GREEN), RED_RGB = hexToRgb(RED), BLUE_RGB = hexToRgb(
 const GLOW = parseFloat(cv('--glow-strength', '1')) || 0;
 // d.historic.dates is trading-day-aligned (build.py reindexes onto the
 // benchmark's own index), so these are trading-day counts, not calendar
-// days -- ~21/month, ~252/year.
-const DAY_PERIODS = { '1d': 1, '1m': 21, '6m': 126, '1y': 252, all: Infinity };
+// days -- ~21/month, ~252/year. No 1Y button: the sample feed is under a
+// year of history, so a 1Y window would silently clamp to the same data
+// as "All" -- see the audit report -- and a real book's config can add it
+// back here plus a `data-p="1y"` button in index.html once history clears
+// that bar.
+const DAY_PERIODS = { '1d': 1, '1m': 21, '6m': 126, all: Infinity };
 // Beta/alpha are a regression coefficient: meaningless, or wildly noisy,
 // from a handful of points. Unlike return/Sharpe/drawdown (well-defined
 // for any window length), the regression always uses at least this many
@@ -28,7 +32,7 @@ const DAY_PERIODS = { '1d': 1, '1m': 21, '6m': 126, '1y': 252, all: Infinity };
 // period is shorter (e.g. 1D). See computeKPIsForRange.
 const MIN_REGRESSION_DAYS = 30;
 const BENCH_LABELS = { SPY: 'SPY', QQQ: 'NASDAQ', DIA: 'DOW' };
-const PERIOD_DISPLAY = { '1d': '1D', '1m': '1M', '6m': '6M', '1y': '1Y', all: 'All', custom: 'Custom' };
+const PERIOD_DISPLAY = { '1d': '1D', '1m': '1M', '6m': '6M', all: 'All', custom: 'Custom' };
 const PLOTLY_CONFIG = { displayModeBar: false, responsive: true };
 
 let GLOBAL_D = null, currentPeriod = '6m', customStart = null, customEnd = null;
