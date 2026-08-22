@@ -96,4 +96,4 @@ comparing them means rebuilding and pointing `DATA_PATH` at one at a time.
 
 ## License
 
-[LICENSE](LICENSE).
+[LICENSE](LICENSE)
