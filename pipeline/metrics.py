@@ -123,7 +123,10 @@ def trade_level_stats(trades: list[Trade]) -> dict:
         # breaks the frontend's JSON.parse. None matches how the rest of the
         # codebase represents "not applicable" (e.g. recovery_date).
         "profit_factor": float(gross_win / gross_loss) if gross_loss else None,
-        "expectancy_pct": float(returns.mean()) if len(returns) else 0.0,
+        # No separate "expectancy_pct" field: win_rate-weighted
+        # avg_win/avg_loss collapses algebraically to the plain mean once
+        # wins and losses partition every closed trade, so it would always
+        # equal mean_return_pct above under a different name.
         "median_hold_hours": float(hold_hours.median()) if len(hold_hours) else 0.0,
         "mean_hold_hours": float(hold_hours.mean()) if len(hold_hours) else 0.0,
         "unique_tickers": int(len(set(t.ticker for t in trades))),

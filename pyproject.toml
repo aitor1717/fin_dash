@@ -1,0 +1,20 @@
+[project]
+name = "fin-dash"
+version = "0.1.0"
+description = "Self-refreshing portfolio dashboard for a trade-log CSV feed"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Aitor Bazo" }]
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=3.0.3",
+    "yfinance>=1.5.1",
+    "PyYAML>=6.0.3",
+    "numpy>=2.5.1",
+]
+
+# Metadata and a tool-readable dependency list only -- pipeline/ runs as
+# plain scripts (`python pipeline/build.py`), not an installable package
+# (see CLAUDE.md), so there's no [build-system] table here on purpose.
+# `pip install -r requirements.txt` (or `pip install .` if you add a build
+# backend yourself) both read the same dependency list above.
