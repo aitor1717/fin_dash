@@ -10,7 +10,7 @@ Sortino, alpha/beta, drawdown, concentration, trade-level stats).
 
 `pipeline/metrics.py` also computes an evaluation-style compliance panel
 (profit target progress, trailing max-loss margin, concentration-band
-status, price/volume floor violations) into every `dashboard.json` -- see
+status, price/volume floor violations) into every `dashboard.json`. See
 `compliance_panel()`. It isn't wired into the current UI yet; the raw
 numbers are there for anyone who wants to add a panel for it.
 
@@ -76,7 +76,7 @@ python pipeline/build.py --config config.sample.yaml
 Long trades reconcile on the ask to open and the bid to close (`open_ask`
 entry, `close_bid` exit); short trades reconcile the other way (`open_bid`
 entry, `close_ask` exit). `status` (`open`/`closed`, case-insensitive) is
-the authoritative lifecycle signal -- anything else is a data problem and
+the authoritative lifecycle signal. Anything else is a data problem and
 the parser raises.
 
 ## Running your own book
@@ -86,12 +86,12 @@ Copy `config.sample.yaml`, point `feed_path` at your own CSV, adjust
 (e.g. `docs/data-personal`) so it doesn't overwrite the demo data. Then
 point `docs/app.js`'s `DATA_PATH` constant at that `output_dir`'s
 `dashboard.json` and rebuild. Add your feed and output paths to
-`.gitignore` if they contain real trade data -- only fully synthetic data
+`.gitignore` if they contain real trade data. Only fully synthetic data
 belongs in a public fork of this repo.
 
 Running several books or scenarios side by side just means repeating this
 with a different config file and `output_dir` per scenario (own
-account size, weight, or feed) -- there's no dataset switcher in the UI, so
+account size, weight, or feed); there's no dataset switcher in the UI, so
 comparing them means rebuilding and pointing `DATA_PATH` at one at a time.
 
 ## License
