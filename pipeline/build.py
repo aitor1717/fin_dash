@@ -47,7 +47,6 @@ def build(config_path: str) -> None:
 
     pnl = M.daily_pnl(sizing_result.sized_trades, tz)
     equity = M.equity_curve(pnl, account_size)
-    cumulative_return_pct = 100 * (equity.iloc[-1] - account_size) / account_size if len(equity) else 0.0
 
     # Long-only and short-only slices, isolated as if each were the only book
     # traded. This filters the sized trades already computed above by side --
@@ -76,6 +75,60 @@ def build(config_path: str) -> None:
     else:
         end = max(t.close_dt for t in trades).tz_convert(tz).date()
         end = max(end, today)
+
+    # Market snapshot + open positions' live unrealized $ -- fetched here
+    # (moved up from originally coming after the benchmark/equity-curve
+    # block below) so the "Live mark-to-market" adjustment further down can
+    # use it. asof_date/all_tickers only need `trades`, not anything
+    # derived from the benchmark fetch, so this only changes *when* the
+    # snapshot is fetched, not what's fetched.
+    # Synthetic what-if tickers (see simulate_scenario.py) aren't real
+    # symbols. Skip them here instead of spending one failed network
+    # lookup each.
+    all_tickers = sorted(set(t.ticker for t in trades if not t.ticker.startswith("SIM-")))
+    print(f"Fetching market snapshot for {len(all_tickers)} tickers (price/volume compliance + mark-to-market)")
+    try:
+        snapshot = fetch_market_snapshot(all_tickers, asof_date=asof_date)
+    except Exception as e:
+        print(f"  WARNING: market snapshot fetch failed ({e})", file=sys.stderr)
+        snapshot = {t: {"last_price": None, "avg_volume": None} for t in all_tickers}
+
+    # Open positions + their live unrealized $, computed before the equity
+    # curve below so today's equity-curve point can include it. The equity
+    # curve is otherwise realized-closes-only (M.daily_pnl only counts
+    # admitted, *closed* trades grouped by close_dt) -- an open position
+    # that's up or down big today would otherwise never move the main chart
+    # until it actually closes, days or weeks later.
+    sized_by_id = {id(s.trade): s for s in sizing_result.sized_trades}
+    open_positions = []
+    for t in open_trades(trades):
+        snap = snapshot.get(t.ticker, {"last_price": None, "avg_volume": None})
+        live_price = snap["last_price"]
+        if live_price is not None:
+            price_move_pct = 100 * (live_price - t.entry_price) / t.entry_price
+            # A short profits from a price drop. The raw price move above
+            # has the opposite sign of the position's own P&L for a short.
+            unrealized_pct = -price_move_pct if t.position == "short" else price_move_pct
+        else:
+            unrealized_pct = t.pct_change
+        sized = sized_by_id.get(id(t))
+        notional = sized.notional if sized and sized.admitted else 0.0
+        open_positions.append({
+            "ticker": t.ticker,
+            "side": t.position,
+            "open_datetime": t.open_dt.isoformat(),
+            "scheduled_close_datetime": t.close_dt.isoformat(),
+            "entry_price": t.entry_price,
+            "live_price": live_price,
+            "unrealized_pct": round(unrealized_pct, 3),
+            "notional_dollars": round(notional, 2),
+            "unrealized_dollars": round(notional * unrealized_pct / 100, 2),
+            "capital_admitted": bool(sized and sized.admitted),
+        })
+    # Only admitted positions carry real notional -- matches how
+    # equity/utilization elsewhere only count admitted trades, so this
+    # can't move the curve by more than what's actually sized into the book.
+    total_unrealized_dollars = sum(p["unrealized_dollars"] for p in open_positions if p["capital_admitted"])
 
     print(f"Fetching benchmark history for {benchmarks} ({start} to {end})")
     try:
@@ -108,6 +161,17 @@ def build(config_path: str) -> None:
     equity_naive = equity.copy()
     equity_naive.index = pd.DatetimeIndex(equity_naive.index).tz_localize(None).normalize()
     equity_aligned = equity_naive.reindex(trading_days).ffill().fillna(account_size)
+
+    # Live mark-to-market: fold currently-open positions' unrealized $
+    # (computed above) into today's own point on the curve -- recomputed
+    # fresh every run from the live snapshot, same as open_positions itself.
+    # Only the LAST point (today) is touched; every prior day is
+    # realized-only and stays exactly as it was once a trade actually
+    # closed on it -- see M.daily_pnl.
+    if len(equity_aligned):
+        equity_aligned.iloc[-1] = equity_aligned.iloc[-1] + total_unrealized_dollars
+
+    cumulative_return_pct = 100 * (equity_aligned.iloc[-1] - account_size) / account_size if len(equity_aligned) else 0.0
 
     util_naive = normalize_dates(sizing_result.utilization, tz) if len(sizing_result.utilization) else pd.Series(dtype=float)
     util_aligned = util_naive.reindex(trading_days).ffill().fillna(0.0)
@@ -150,47 +214,10 @@ def build(config_path: str) -> None:
     ticker_conc = M.ticker_concentration(sizing_result.sized_trades)
     closed_returns_pct = [t.pct_change for t in trades if not t.is_open]
 
-    # Synthetic what-if tickers (see simulate_scenario.py) aren't real symbols.
-    # Skip them here instead of spending one failed network lookup each.
-    all_tickers = sorted(set(t.ticker for t in trades if not t.ticker.startswith("SIM-")))
-    print(f"Fetching market snapshot for {len(all_tickers)} tickers (price/volume compliance + mark-to-market)")
-    try:
-        snapshot = fetch_market_snapshot(all_tickers, asof_date=asof_date)
-    except Exception as e:
-        print(f"  WARNING: market snapshot fetch failed ({e})", file=sys.stderr)
-        snapshot = {t: {"last_price": None, "avg_volume": None} for t in all_tickers}
-
     compliance = M.compliance_panel(
         cumulative_return_pct, dd["max_drawdown_pct"], sizing_result.sized_trades,
         sizing_result.pct_skipped, snapshot, cfg["compliance"],
     )
-
-    sized_by_id = {id(s.trade): s for s in sizing_result.sized_trades}
-    open_positions = []
-    for t in open_trades(trades):
-        snap = snapshot.get(t.ticker, {"last_price": None, "avg_volume": None})
-        live_price = snap["last_price"]
-        if live_price is not None:
-            price_move_pct = 100 * (live_price - t.entry_price) / t.entry_price
-            # A short profits from a price drop. The raw price move above
-            # has the opposite sign of the position's own P&L for a short.
-            unrealized_pct = -price_move_pct if t.position == "short" else price_move_pct
-        else:
-            unrealized_pct = t.pct_change
-        sized = sized_by_id.get(id(t))
-        notional = sized.notional if sized and sized.admitted else 0.0
-        open_positions.append({
-            "ticker": t.ticker,
-            "side": t.position,
-            "open_datetime": t.open_dt.isoformat(),
-            "scheduled_close_datetime": t.close_dt.isoformat(),
-            "entry_price": t.entry_price,
-            "live_price": live_price,
-            "unrealized_pct": round(unrealized_pct, 3),
-            "notional_dollars": round(notional, 2),
-            "unrealized_dollars": round(notional * unrealized_pct / 100, 2),
-            "capital_admitted": bool(sized and sized.admitted),
-        })
 
     today_tickers = sorted(set(benchmarks) | {
         p["ticker"] for p in open_positions if not p["ticker"].startswith("SIM-")
