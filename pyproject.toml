@@ -15,6 +15,6 @@ dependencies = [
 
 # Metadata and a tool-readable dependency list only -- pipeline/ runs as
 # plain scripts (`python pipeline/build.py`), not an installable package
-# (see the internal notes), so there's no [build-system] table here on purpose.
+# (see internal notes), so there's no [build-system] table here on purpose.
 # `pip install -r requirements.txt` (or `pip install .` if you add a build
 # backend yourself) both read the same dependency list above.
