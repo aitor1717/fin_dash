@@ -1,6 +1,6 @@
 # Portfolio Dashboard
 
-**Live demo: [aitor1717.github.io/fin_dash](https://aitor1717.github.io/fin_dash/)**
+**Demo: [aitor1717.github.io/fin_dash](https://aitor1717.github.io/fin_dash/)**
 
 ![Dashboard preview](preview.png)
 
