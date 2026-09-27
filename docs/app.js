@@ -59,6 +59,17 @@ function regress(x, y) {
   return { beta, alpha };
 }
 
+// Before the market open, the latest intraday data build.py could fetch is
+// still the previous session -- see fetch_intraday_today's own before-the-
+// open/weekend-close_dt handling. Labeling that as "today" would claim a
+// session that hasn't happened yet, so anywhere the UI names the intraday
+// session, it reads this instead of assuming "today".
+function sessionLabel(d) {
+  if (!d.today || !d.today.session_date) return 'today';
+  if (d.today.is_current_session) return 'today';
+  return new Date(d.today.session_date + 'T00:00:00Z').toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}
+
 function pctChange(arr) {
   const out = [];
   for (let i = 1; i < arr.length; i++) out.push(arr[i] / arr[i - 1] - 1);
@@ -133,7 +144,12 @@ function computeKPIsForRange(d, i0, i1, period) {
   let maxDD;
   const maxDDIsIntraday = period === '1d' && todayPortfolio && todayPortfolio.length;
   if (maxDDIsIntraday) {
-    let peak = -Infinity, dd = 0;
+    // todayPortfolio is now the account's day change since the prior
+    // close (see build.py's account_day_change_dollars) -- 0% IS the
+    // prior close, and a real starting point, not an unbounded low. A
+    // session that opens and only ever climbs from there has a real
+    // peak-to-trough of 0, not whatever its first tick happens to be.
+    let peak = 0, dd = 0;
     todayPortfolio.forEach(v => { if (v == null) return; peak = Math.max(peak, v); dd = Math.min(dd, v - peak); });
     maxDD = dd; // already percentage points, same units as today.series itself
   } else {
@@ -214,7 +230,7 @@ function renderMainChartIntraday(d) {
   const timestamps = d.today.timestamps || [];
   const series = d.today.series || {};
   if (!timestamps.length || (!series.portfolio && !series.QQQ)) {
-    document.getElementById('chart-main').innerHTML = '<div class="empty-note">No intraday data yet today (market may be closed).</div>';
+    document.getElementById('chart-main').innerHTML = `<div class="empty-note">No intraday data yet for ${sessionLabel(d)} (market may be closed).</div>`;
     return;
   }
   const t = timestamps.map(x => new Date(x));
@@ -243,7 +259,7 @@ function renderMainChartIntraday(d) {
   }
   Plotly.newPlot('chart-main', traces, {
     ...mainChartLayout(),
-    yaxis: { gridcolor: GRID, showspikes: false, title: { text: '% since open', font: { size: 9 } } },
+    yaxis: { gridcolor: GRID, showspikes: false, title: { text: '% vs prior close', font: { size: 9 } } },
   }, PLOTLY_CONFIG);
 }
 
@@ -702,7 +718,7 @@ function selectTicker(key) {
 
 function renderSelectedChart(d, key) {
   const label = BENCH_LABELS[key] || key;
-  document.getElementById('selected-title').textContent = label + ' today';
+  document.getElementById('selected-title').textContent = label + ' ' + sessionLabel(d);
   const series = (d.today.series || {})[key];
   const timestamps = d.today.timestamps || [];
   const container = document.getElementById('chart-selected');

@@ -219,43 +219,72 @@ def build(config_path: str) -> None:
         sizing_result.pct_skipped, snapshot, cfg["compliance"],
     )
 
+    # Recently-closed tickers, not just currently-open ones: a trade that
+    # closed earlier in the session being measured needs its own intraday
+    # price path (to mark it up to its close time) even though it's no
+    # longer in open_positions. A calendar-day window rather than "closed
+    # today" specifically, since which date IS "today" (the session
+    # fetch_intraday_today actually returns) isn't known until after that
+    # fetch -- see its own before-the-open/weekend-close_dt handling.
+    recent_cutoff = (
+        pd.Timestamp(asof_date, tz="UTC") if asof_date is not None else pd.Timestamp.now(tz="UTC")
+    ) - pd.Timedelta(days=5)
+    recently_closed_tickers = {
+        t.ticker for t in trades
+        if not t.is_open and t.close_dt >= recent_cutoff and not t.ticker.startswith("SIM-")
+    }
     today_tickers = sorted(set(benchmarks) | {
         p["ticker"] for p in open_positions if not p["ticker"].startswith("SIM-")
-    })
+    } | recently_closed_tickers)
     print(f"Fetching intraday 'today' data for {len(today_tickers)} tickers")
     try:
-        intraday = fetch_intraday_today(today_tickers, asof_date=asof_date)
+        intraday_prices, session_date = fetch_intraday_today(today_tickers, tz, asof_date=asof_date)
     except Exception as e:
         print(f"  WARNING: intraday fetch failed ({e})", file=sys.stderr)
-        intraday = pd.DataFrame()
+        intraday_prices, session_date = pd.DataFrame(), None
 
-    today_chart = {"timestamps": [], "series": {}}
-    if not intraday.empty:
-        idx = intraday.index
+    today_chart = {"timestamps": [], "series": {}, "session_date": None, "is_current_session": False}
+    if session_date is not None and not intraday_prices.empty:
+        idx = intraday_prices.index
         today_chart["timestamps"] = [ts.isoformat() for ts in idx]
+        today_chart["session_date"] = str(session_date)
+        effective_today = asof_date if asof_date is not None else pd.Timestamp.now(tz=tz).date()
+        today_chart["is_current_session"] = session_date == effective_today
+
         # Every fetched ticker, not just benchmarks. today_tickers already
         # includes open positions' own intraday series; expose them here too
-        # for the per-position mini-chart.
-        for col in intraday.columns:
+        # for the per-position mini-chart. % from that ticker's own first
+        # bar of the session -- distinct from the portfolio series below,
+        # which is marked from the previous close / each position's entry,
+        # not from the session's first bar.
+        for col in intraday_prices.columns:
+            series = intraday_prices[col].reindex(idx)
+            valid = series.dropna()
+            if valid.empty:
+                continue
+            first = valid.iloc[0]
             today_chart["series"][col] = [
-                round(float(v), 3) if pd.notna(v) else None for v in intraday[col]
+                round(100 * (v - first) / first, 3) if pd.notna(v) else None for v in series
             ]
-        # Notional-weighted portfolio move so far today, over the open book.
-        weights = {
-            p["ticker"]: p["notional_dollars"] for p in open_positions
-            if p["notional_dollars"] > 0 and p["ticker"] in intraday.columns
-        }
-        if weights:
-            port_series = []
-            for ts in idx:
-                num, denom = 0.0, 0.0
-                for tkr, w in weights.items():
-                    val = intraday.loc[ts, tkr]
-                    if pd.notna(val):
-                        num += w * val
-                        denom += w
-                port_series.append(round(num / denom, 3) if denom > 0 else None)
-            today_chart["series"]["portfolio"] = port_series
+
+        # Account day change: dollar move since the previous session's
+        # close, as a % of equity at that close -- a broker's "day change",
+        # not the notional-weighted move-since-session-open this replaced.
+        prior_equity = M.prior_close_equity(equity_naive, session_date, account_size)
+        prev_close_by_ticker: dict[str, float | None] = {}
+        for tkr in today_tickers:
+            daily_closes = snapshot.get(tkr, {}).get("daily_closes") or {}
+            dates_before = [d for d in daily_closes if pd.Timestamp(d).date() < session_date]
+            prev_close_by_ticker[tkr] = (
+                daily_closes[max(dates_before, key=lambda d: pd.Timestamp(d))] if dates_before else None
+            )
+        day_change_dollars = M.account_day_change_dollars(
+            sizing_result.sized_trades, idx, intraday_prices, prev_close_by_ticker, session_date, tz,
+        )
+        today_chart["series"]["portfolio"] = [
+            round(100 * v / prior_equity, 3) if prior_equity else None
+            for v in day_change_dollars.tolist()
+        ]
 
     dashboard = {
         "generated_at": datetime.now(timezone.utc).isoformat(),

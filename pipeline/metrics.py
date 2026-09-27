@@ -35,6 +35,122 @@ def equity_curve(pnl: pd.Series, account_size: float) -> pd.Series:
     return account_size + daily.cumsum()
 
 
+def prior_close_equity(equity_naive: pd.Series, session_date, account_size: float) -> float:
+    """Account equity as of the close of the trading day immediately before
+    `session_date`, from the realized-only calendar-day equity curve
+    (equity_curve() above -- *not* the live-mark-to-market-overlaid series
+    build.py derives from it). This is the account_day_change_dollars
+    denominator and the reference point for anything held overnight: a
+    position opened before `session_date` and still open, or closed during
+    it, gets marked from here, not from its own entry price.
+    """
+    if equity_naive is None or not len(equity_naive):
+        return account_size
+    prior = equity_naive[equity_naive.index < pd.Timestamp(session_date)]
+    return float(prior.iloc[-1]) if len(prior) else account_size
+
+
+def account_day_change_dollars(
+    sized_trades: list[SizedTrade],
+    session_index: pd.DatetimeIndex,
+    intraday_prices: pd.DataFrame,
+    prev_close_by_ticker: dict[str, float | None],
+    session_date,
+    tz: str,
+) -> pd.Series:
+    """Dollar move of the account since the previous session's close, at
+    each intraday timestamp of `session_date` -- a broker's "day change",
+    not the notional-weighted move-since-session-open this replaced.
+
+    Per admitted position:
+    - opened before `session_date` and closes during it (held overnight,
+      then closed today): marked from prev_close_by_ticker[ticker] until
+      its close time, then holds its realized dollar P&L flat.
+    - opened before `session_date` and still open at the end of it (held
+      overnight, never closes today): excluded. Its since-prev-close move
+      would only be its own day's slice, but build.py's separate
+      total_unrealized_dollars overlay (which is what the published equity
+      total actually reflects for a still-open position) marks the whole
+      book from entry price instead -- the position's entire lifetime
+      move, however many days it's been open. Mixing those two bases would
+      make prior_close_equity() + this series's last value silently
+      disagree with the published equity total for any multi-day-held
+      position. This is a sample/demo project, not a real account holding
+      real long-lived swing positions, so rather than reconciling the two
+      conventions, a long-held-and-still-open position is simply left out
+      of the day-change series -- it only ever shows up in the overall
+      equity curve, not in "today"'s own move.
+    - opened during `session_date`: contributes 0 before its own open
+      time, then marked from its own entry_price from there on -- not the
+      previous close, which it never actually held a position at. Basis
+      and prior_close_equity() agree here (it didn't exist before today),
+      so no such ambiguity applies to a same-day open.
+    - closed before `session_date`: excluded. Its P&L is already inside
+      prior_close_equity() above, not part of this session's own change.
+
+    Realized dollar P&L (SizedTrade.pnl_dollars) is exact by construction
+    (from the feed's own entry/exit prices), independent of whatever price
+    intraday_prices happens to show right at the close timestamp -- using
+    it instead of a price-derived figure avoids baking bid/ask-spread
+    noise into a number that should be exact.
+    """
+    out = pd.Series(0.0, index=session_index)
+    if not len(session_index):
+        return out
+    session_start = session_index[0]
+
+    for s in sized_trades:
+        if not s.admitted:
+            continue
+        t = s.trade
+        open_date = t.open_dt.tz_convert(tz).date()
+        if open_date > session_date:
+            continue  # opens after this session; not yet relevant
+
+        opened_today = open_date == session_date
+
+        close_date = t.close_dt.tz_convert(tz).date() if not t.is_open else None
+        if close_date is not None and close_date < session_date:
+            continue  # closed before this session -- already realized in prior_close_equity
+
+        closed_today = close_date == session_date
+
+        if opened_today:
+            basis = t.entry_price
+            active_from = t.open_dt
+        else:
+            if not closed_today:
+                continue  # held-overnight-and-still-open -- see docstring
+            basis = prev_close_by_ticker.get(t.ticker)
+            active_from = session_start
+            if basis is None:
+                continue
+        close_at = t.close_dt if closed_today else None
+        sign = -1.0 if t.position == "short" else 1.0
+        prices = intraday_prices[t.ticker] if t.ticker in intraday_prices.columns else None
+
+        contrib = []
+        for ts in session_index:
+            if ts < active_from:
+                contrib.append(0.0)
+            elif close_at is not None and ts >= close_at:
+                contrib.append(s.pnl_dollars)
+            else:
+                price = None
+                if prices is not None:
+                    available = prices.loc[:ts].dropna()
+                    if len(available):
+                        price = float(available.iloc[-1])
+                if price is None:
+                    contrib.append(0.0)
+                else:
+                    move_pct = sign * 100 * (price - basis) / basis
+                    contrib.append(s.notional * move_pct / 100)
+        out = out.add(pd.Series(contrib, index=session_index), fill_value=0.0)
+
+    return out
+
+
 def max_drawdown(equity: pd.Series) -> dict:
     running_peak = equity.cummax()
     drawdown = (equity - running_peak) / running_peak

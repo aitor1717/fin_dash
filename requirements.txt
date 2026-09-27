@@ -4,3 +4,4 @@ pandas>=3.0.3
 yfinance>=1.5.1
 PyYAML>=6.0.3
 numpy>=2.5.1
+pytest>=8.0.0
