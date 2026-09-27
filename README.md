@@ -1,5 +1,7 @@
 # Portfolio Dashboard
 
+[![tests](https://github.com/aitor1717/fin_dash/actions/workflows/tests.yml/badge.svg)](https://github.com/aitor1717/fin_dash/actions/workflows/tests.yml)
+
 **Demo: [aitor1717.github.io/fin_dash](https://aitor1717.github.io/fin_dash/)**
 
 ![Dashboard preview](preview.png)
